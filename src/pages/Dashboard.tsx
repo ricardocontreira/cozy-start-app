@@ -1,13 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LayoutDashboard, LogOut, Copy, Check, Users } from "lucide-react";
-import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PeriodSelector } from "@/components/PeriodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,6 +35,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Format the selected period for display
+  const selectedPeriodLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -199,9 +205,16 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* Period Selector */}
+        <div className="mb-6 md:mb-8">
+          <PeriodSelector 
+            selectedDate={selectedDate} 
+            onDateChange={setSelectedDate} 
+          />
+        </div>
+
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-3 mb-6 md:mb-8">
-          {/* Total Balance */}
           <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -215,8 +228,8 @@ export default function Dashboard() {
               <div className="text-2xl md:text-3xl font-bold text-foreground">
                 {formatCurrency(summaryData.balance)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Atualizado agora
+              <p className="text-xs text-muted-foreground mt-1 capitalize">
+                {selectedPeriodLabel}
               </p>
             </CardContent>
           </Card>
@@ -235,8 +248,8 @@ export default function Dashboard() {
               <div className="text-2xl md:text-3xl font-bold text-foreground">
                 {formatCurrency(summaryData.expenses)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                +12% vs mês anterior
+              <p className="text-xs text-muted-foreground mt-1 capitalize">
+                {selectedPeriodLabel}
               </p>
             </CardContent>
           </Card>
@@ -255,8 +268,8 @@ export default function Dashboard() {
               <div className="text-2xl md:text-3xl font-bold text-foreground">
                 {formatCurrency(summaryData.income)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                +5% vs mês anterior
+              <p className="text-xs text-muted-foreground mt-1 capitalize">
+                {selectedPeriodLabel}
               </p>
             </CardContent>
           </Card>
