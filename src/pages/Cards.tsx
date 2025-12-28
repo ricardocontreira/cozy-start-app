@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceUploader } from "@/components/InvoiceUploader";
 import { UploadHistory } from "@/components/UploadHistory";
+import { TransactionsList } from "@/components/TransactionsList";
 import {
   Dialog,
   DialogContent,
@@ -602,6 +603,9 @@ function CardWithInvoice({
               onUndo={undoUpload}
               isOwner={isOwner}
             />
+
+            {/* Transactions List */}
+            <TransactionsList cardId={card.id} houseId={houseId} />
           </CardContent>
         </CollapsibleContent>
       </Card>
