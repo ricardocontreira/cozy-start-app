@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import HouseSetup from "./pages/HouseSetup";
 import Dashboard from "./pages/Dashboard";
 import Cards from "./pages/Cards";
+import CardDetails from "./pages/CardDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/house-setup" element={<HouseSetup />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/cards" element={<Cards />} />
+              <Route path="/cards/:cardId" element={<CardDetails />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
