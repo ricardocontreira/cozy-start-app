@@ -39,22 +39,27 @@ serve(async (req) => {
     // Get auth header for user context
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("Authorization header required");
+      return new Response(
+        JSON.stringify({ error: "Authorization header required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    // Extract the token from the header
+    const token = authHeader.replace("Bearer ", "");
 
     // Create Supabase client with service role for admin operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
-    // Create client with user token to get user info
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseClient = createClient(SUPABASE_URL, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    // Verify the user's JWT token using the admin client
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
     if (userError || !userData.user) {
       console.error("Auth error:", userError);
-      throw new Error("User not authenticated");
+      return new Response(
+        JSON.stringify({ error: "User not authenticated" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const userId = userData.user.id;
