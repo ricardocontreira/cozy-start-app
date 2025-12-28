@@ -144,6 +144,121 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          card_id: string | null
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string
+          house_id: string
+          id: string
+          installment: string | null
+          transaction_date: string
+          updated_at: string
+          upload_id: string | null
+        }
+        Insert: {
+          amount: number
+          card_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          house_id: string
+          id?: string
+          installment?: string | null
+          transaction_date: string
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Update: {
+          amount?: number
+          card_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          house_id?: string
+          id?: string
+          installment?: string | null
+          transaction_date?: string
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "upload_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upload_logs: {
+        Row: {
+          card_id: string
+          created_at: string
+          filename: string
+          house_id: string
+          id: string
+          items_count: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          filename: string
+          house_id: string
+          id?: string
+          items_count?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          filename?: string
+          house_id?: string
+          id?: string
+          items_count?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_logs_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upload_logs_house_id_fkey"
+            columns: ["house_id"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

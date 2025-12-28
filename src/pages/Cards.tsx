@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, CreditCard, Plus, Pencil, Trash2, ArrowLeft, Loader2 } from "lucide-react";
+import { Home, CreditCard, Plus, Pencil, Trash2, ArrowLeft, Loader2, ChevronDown, ChevronUp, FileSpreadsheet } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
+import { useInvoiceUpload } from "@/hooks/useInvoiceUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InvoiceUploader } from "@/components/InvoiceUploader";
+import { UploadHistory } from "@/components/UploadHistory";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +45,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const cardSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -95,6 +103,7 @@ export default function Cards() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCardData | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   const form = useForm<CardFormData>({
     resolver: zodResolver(cardSchema),
@@ -426,81 +435,176 @@ export default function Cards() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
             {cards.map((card) => (
-              <Card
+              <CardWithInvoice
                 key={card.id}
-                className="relative overflow-hidden border-0 shadow-lg"
-                style={{ backgroundColor: card.color }}
-              >
-                <CardContent className="p-6 text-white">
-                  {/* Card chip */}
-                  <div className="w-12 h-8 rounded bg-yellow-400/80 mb-6" />
-                  
-                  {/* Card number */}
-                  <div className="font-mono text-lg tracking-widest mb-4 opacity-90">
-                    •••• •••• •••• {card.last_digits}
-                  </div>
-                  
-                  {/* Card name & brand */}
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-xs opacity-70 uppercase tracking-wide">Nome</p>
-                      <p className="font-medium">{card.name}</p>
-                    </div>
-                    <div className="text-2xl">
-                      {brandIcons[card.brand]}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  {isOwner && (
-                    <div className="absolute top-4 right-4 flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                        onClick={() => handleEdit(card)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. O cartão "{card.name}" será 
-                              permanentemente removido.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(card.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                card={card}
+                isOwner={isOwner}
+                isExpanded={expandedCardId === card.id}
+                onToggle={() => setExpandedCardId(expandedCardId === card.id ? null : card.id)}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                houseId={currentHouse?.id || ""}
+              />
             ))}
           </div>
         )}
       </main>
     </div>
+  );
+}
+
+// Separate component for card with invoice management
+interface CardWithInvoiceProps {
+  card: CreditCardData;
+  isOwner: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onEdit: (card: CreditCardData) => void;
+  onDelete: (cardId: string) => void;
+  houseId: string;
+}
+
+function CardWithInvoice({
+  card,
+  isOwner,
+  isExpanded,
+  onToggle,
+  onEdit,
+  onDelete,
+  houseId,
+}: CardWithInvoiceProps) {
+  const {
+    uploadHistory,
+    isUploading,
+    isLoading: historyLoading,
+    uploadInvoice,
+    undoUpload,
+  } = useInvoiceUpload({ cardId: card.id, houseId });
+
+  return (
+    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <Card className="overflow-hidden border shadow-lg">
+        {/* Credit Card Visual */}
+        <div
+          className="relative p-6 text-white"
+          style={{ backgroundColor: card.color }}
+        >
+          {/* Card chip */}
+          <div className="w-12 h-8 rounded bg-yellow-400/80 mb-6" />
+
+          {/* Card number */}
+          <div className="font-mono text-lg tracking-widest mb-4 opacity-90">
+            •••• •••• •••• {card.last_digits}
+          </div>
+
+          {/* Card name & brand */}
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-xs opacity-70 uppercase tracking-wide">Nome</p>
+              <p className="font-medium">{card.name}</p>
+            </div>
+            <div className="text-2xl">{brandIcons[card.brand]}</div>
+          </div>
+
+          {/* Actions */}
+          {isOwner && (
+            <div className="absolute top-4 right-4 flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(card);
+                }}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação não pode ser desfeita. O cartão "{card.name}" será
+                      permanentemente removido.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(card.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+
+          {/* Expand toggle */}
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute bottom-3 right-3 text-white/70 hover:text-white hover:bg-white/20 gap-1"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="text-xs">Faturas</span>
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+
+        {/* Collapsible Invoice Management */}
+        <CollapsibleContent>
+          <CardContent className="p-6 space-y-6 bg-card border-t">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                📄 Importe sua fatura com facilidade
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Você no controle das suas finanças. Arraste um arquivo CSV ou Excel com suas transações.
+              </p>
+              {isOwner ? (
+                <InvoiceUploader
+                  onUpload={uploadInvoice}
+                  isUploading={isUploading}
+                />
+              ) : (
+                <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
+                  <FileSpreadsheet className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Apenas o proprietário pode importar faturas</p>
+                </div>
+              )}
+            </div>
+
+            <UploadHistory
+              history={uploadHistory}
+              isLoading={historyLoading}
+              onUndo={undoUpload}
+              isOwner={isOwner}
+            />
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
