@@ -1,24 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, CreditCard, Plus, Pencil, Trash2, ArrowLeft, Loader2, ChevronDown, ChevronUp, FileSpreadsheet } from "lucide-react";
+import { CreditCard, Plus, ArrowLeft, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
-import { useInvoiceUpload } from "@/hooks/useInvoiceUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InvoiceUploader } from "@/components/InvoiceUploader";
-import { UploadHistory } from "@/components/UploadHistory";
-import { TransactionsList } from "@/components/TransactionsList";
 import {
   Dialog,
   DialogContent,
@@ -35,22 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 const cardSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -67,7 +47,6 @@ interface CreditCardData {
   brand: "visa" | "mastercard" | "elo";
   last_digits: string;
   color: string;
-  icon: string;
 }
 
 const brandIcons: Record<string, string> = {
@@ -76,21 +55,15 @@ const brandIcons: Record<string, string> = {
   elo: "💛",
 };
 
-const brandColors: Record<string, string> = {
-  visa: "#1A1F71",
-  mastercard: "#EB001B",
-  elo: "#FFCB05",
-};
-
 const cardColors = [
-  "#059669", // Primary green
-  "#1A1F71", // Visa blue
-  "#EB001B", // Mastercard red
-  "#000000", // Black
-  "#6366F1", // Indigo
-  "#8B5CF6", // Purple
-  "#EC4899", // Pink
-  "#F97316", // Orange
+  "#059669",
+  "#1A1F71",
+  "#EB001B",
+  "#000000",
+  "#6366F1",
+  "#8B5CF6",
+  "#EC4899",
+  "#F97316",
 ];
 
 export default function Cards() {
@@ -98,13 +71,11 @@ export default function Cards() {
   const { currentHouse, memberRole, loading: houseLoading } = useHouse();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [cards, setCards] = useState<CreditCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<CreditCardData | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   const form = useForm<CardFormData>({
     resolver: zodResolver(cardSchema),
@@ -130,7 +101,7 @@ export default function Cards() {
 
   const fetchCards = async () => {
     if (!currentHouse) return;
-    
+
     try {
       const { data, error } = await supabase
         .from("credit_cards")
@@ -149,47 +120,27 @@ export default function Cards() {
 
   const handleSubmit = async (data: CardFormData) => {
     if (!currentHouse || !user) return;
-    
+
     setSubmitting(true);
-    
+
     try {
-      if (editingCard) {
-        const { error } = await supabase
-          .from("credit_cards")
-          .update({
-            name: data.name,
-            brand: data.brand,
-            last_digits: data.last_digits,
-            color: data.color,
-          })
-          .eq("id", editingCard.id);
+      const { error } = await supabase.from("credit_cards").insert({
+        house_id: currentHouse.id,
+        name: data.name,
+        brand: data.brand,
+        last_digits: data.last_digits,
+        color: data.color,
+        created_by: user.id,
+      });
 
-        if (error) throw error;
-        
-        toast({
-          title: "Cartão atualizado!",
-          description: "As alterações foram salvas.",
-        });
-      } else {
-        const { error } = await supabase.from("credit_cards").insert({
-          house_id: currentHouse.id,
-          name: data.name,
-          brand: data.brand,
-          last_digits: data.last_digits,
-          color: data.color,
-          created_by: user.id,
-        });
+      if (error) throw error;
 
-        if (error) throw error;
-        
-        toast({
-          title: "Cartão adicionado!",
-          description: `${data.name} foi cadastrado com sucesso.`,
-        });
-      }
+      toast({
+        title: "Cartão adicionado!",
+        description: `${data.name} foi cadastrado com sucesso.`,
+      });
 
       setDialogOpen(false);
-      setEditingCard(null);
       form.reset();
       fetchCards();
     } catch (error: any) {
@@ -203,43 +154,7 @@ export default function Cards() {
     }
   };
 
-  const handleEdit = (card: CreditCardData) => {
-    setEditingCard(card);
-    form.reset({
-      name: card.name,
-      brand: card.brand,
-      last_digits: card.last_digits,
-      color: card.color,
-    });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (cardId: string) => {
-    try {
-      const { error } = await supabase
-        .from("credit_cards")
-        .delete()
-        .eq("id", cardId);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Cartão removido",
-        description: "O cartão foi excluído com sucesso.",
-      });
-      
-      fetchCards();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const openNewCardDialog = () => {
-    setEditingCard(null);
     form.reset({
       name: "",
       brand: "visa",
@@ -272,9 +187,9 @@ export default function Cards() {
         <div className="max-w-4xl mx-auto px-4 py-3 md:px-6 md:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => navigate("/dashboard")}
                 className="rounded-full"
               >
@@ -285,7 +200,7 @@ export default function Cards() {
                 <p className="text-xs text-muted-foreground">{currentHouse?.name}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <ThemeToggle />
               {isOwner && (
@@ -298,16 +213,12 @@ export default function Cards() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>
-                        {editingCard ? "Editar Cartão" : "Novo Cartão"}
-                      </DialogTitle>
+                      <DialogTitle>Novo Cartão</DialogTitle>
                       <DialogDescription>
-                        {editingCard 
-                          ? "Atualize as informações do cartão." 
-                          : "Adicione um novo cartão de crédito à sua Casa."}
+                        Adicione um novo cartão de crédito à sua Casa.
                       </DialogDescription>
                     </DialogHeader>
-                    
+
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="card-name">Apelido do cartão</Label>
@@ -394,8 +305,6 @@ export default function Cards() {
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                               Salvando...
                             </>
-                          ) : editingCard ? (
-                            "Salvar alterações"
                           ) : (
                             "Adicionar cartão"
                           )}
@@ -424,7 +333,7 @@ export default function Cards() {
               Nenhum cartão cadastrado
             </h2>
             <p className="text-muted-foreground mb-6">
-              {isOwner 
+              {isOwner
                 ? "Comece adicionando seu primeiro cartão de crédito."
                 : "O proprietário da Casa ainda não adicionou cartões."}
             </p>
@@ -436,179 +345,39 @@ export default function Cards() {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
             {cards.map((card) => (
-              <CardWithInvoice
+              <Card
                 key={card.id}
-                card={card}
-                isOwner={isOwner}
-                isExpanded={expandedCardId === card.id}
-                onToggle={() => setExpandedCardId(expandedCardId === card.id ? null : card.id)}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                houseId={currentHouse?.id || ""}
-              />
+                className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-0"
+                onClick={() => navigate(`/cards/${card.id}`)}
+              >
+                <div
+                  className="relative p-6 text-white"
+                  style={{ backgroundColor: card.color }}
+                >
+                  {/* Card chip */}
+                  <div className="w-12 h-8 rounded bg-yellow-400/80 mb-6" />
+
+                  {/* Card number */}
+                  <div className="font-mono text-lg tracking-widest mb-4 opacity-90">
+                    •••• •••• •••• {card.last_digits}
+                  </div>
+
+                  {/* Card name & brand */}
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-xs opacity-70 uppercase tracking-wide">Nome</p>
+                      <p className="font-medium">{card.name}</p>
+                    </div>
+                    <div className="text-2xl">{brandIcons[card.brand]}</div>
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
         )}
       </main>
     </div>
-  );
-}
-
-// Separate component for card with invoice management
-interface CardWithInvoiceProps {
-  card: CreditCardData;
-  isOwner: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onEdit: (card: CreditCardData) => void;
-  onDelete: (cardId: string) => void;
-  houseId: string;
-}
-
-function CardWithInvoice({
-  card,
-  isOwner,
-  isExpanded,
-  onToggle,
-  onEdit,
-  onDelete,
-  houseId,
-}: CardWithInvoiceProps) {
-  const {
-    uploadHistory,
-    isUploading,
-    isLoading: historyLoading,
-    uploadInvoice,
-    undoUpload,
-  } = useInvoiceUpload({ cardId: card.id, houseId });
-
-  return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle}>
-      <Card className="overflow-hidden border shadow-lg">
-        {/* Credit Card Visual */}
-        <div
-          className="relative p-6 text-white"
-          style={{ backgroundColor: card.color }}
-        >
-          {/* Card chip */}
-          <div className="w-12 h-8 rounded bg-yellow-400/80 mb-6" />
-
-          {/* Card number */}
-          <div className="font-mono text-lg tracking-widest mb-4 opacity-90">
-            •••• •••• •••• {card.last_digits}
-          </div>
-
-          {/* Card name & brand */}
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs opacity-70 uppercase tracking-wide">Nome</p>
-              <p className="font-medium">{card.name}</p>
-            </div>
-            <div className="text-2xl">{brandIcons[card.brand]}</div>
-          </div>
-
-          {/* Actions */}
-          {isOwner && (
-            <div className="absolute top-4 right-4 flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(card);
-                }}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta ação não pode ser desfeita. O cartão "{card.name}" será
-                      permanentemente removido.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => onDelete(card.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          )}
-
-          {/* Expand toggle */}
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute bottom-3 right-3 text-white/70 hover:text-white hover:bg-white/20 gap-1"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              <span className="text-xs">Faturas</span>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-
-        {/* Collapsible Invoice Management */}
-        <CollapsibleContent>
-          <CardContent className="p-6 space-y-6 bg-card border-t">
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                📄 Importe sua fatura com facilidade
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Você no controle das suas finanças. Arraste um arquivo CSV ou Excel com suas transações.
-              </p>
-              {isOwner ? (
-                <InvoiceUploader
-                  onUpload={uploadInvoice}
-                  isUploading={isUploading}
-                />
-              ) : (
-                <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
-                  <FileSpreadsheet className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Apenas o proprietário pode importar faturas</p>
-                </div>
-              )}
-            </div>
-
-            <UploadHistory
-              history={uploadHistory}
-              isLoading={historyLoading}
-              onUndo={undoUpload}
-              isOwner={isOwner}
-            />
-
-            {/* Transactions List */}
-            <TransactionsList cardId={card.id} houseId={houseId} />
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
   );
 }
