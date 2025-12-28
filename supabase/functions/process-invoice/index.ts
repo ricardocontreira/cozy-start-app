@@ -46,12 +46,14 @@ serve(async (req) => {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
     // Create client with user token to get user info
-    const supabaseClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "", {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseClient = createClient(SUPABASE_URL, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const { data: userData, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !userData.user) {
+      console.error("Auth error:", userError);
       throw new Error("User not authenticated");
     }
 
