@@ -11,9 +11,10 @@ export interface UploadLog {
   items_count: number;
   status: "processing" | "completed" | "undone" | "error";
   created_at: string;
-  profile?: {
+  billing_month: string | null;
+  profiles: {
     full_name: string | null;
-  };
+  } | null;
 }
 
 interface UseInvoiceUploadOptions {
@@ -40,7 +41,25 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
         .limit(10);
 
       if (error) throw error;
-      setUploadHistory((data || []) as UploadLog[]);
+      
+      // Fetch profile names for each upload
+      const userIds = [...new Set((data || []).map(log => log.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      
+      const profilesMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+      
+      const logsWithProfiles = (data || []).map(log => ({
+        ...log,
+        billing_month: log.billing_month,
+        profiles: {
+          full_name: profilesMap.get(log.user_id) || null
+        }
+      })) as UploadLog[];
+      
+      setUploadHistory(logsWithProfiles);
     } catch (error) {
       console.error("Error fetching upload history:", error);
     } finally {

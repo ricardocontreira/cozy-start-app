@@ -116,9 +116,19 @@ export function UploadHistory({ history, isLoading, onUndo, isOwner }: UploadHis
               <FileSpreadsheet className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">{log.filename}</p>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                  {log.billing_month && (
+                    <span className="text-xs font-medium text-primary">
+                      {format(new Date(log.billing_month + "T00:00:00"), "MMM/yyyy", { locale: ptBR })}
+                    </span>
+                  )}
+                  {log.profiles?.full_name && (
+                    <span className="text-xs text-muted-foreground">
+                      por {log.profiles.full_name}
+                    </span>
+                  )}
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(log.created_at), "dd MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                    • {format(new Date(log.created_at), "dd MMM 'às' HH:mm", { locale: ptBR })}
                   </span>
                   {log.items_count > 0 && (
                     <span className="text-xs text-muted-foreground">
