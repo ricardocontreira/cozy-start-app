@@ -252,8 +252,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Monthly Expenses */}
-          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+          {/* Monthly Expenses - Clickable */}
+          <Card 
+            className="border-border/50 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer"
+            onClick={() => navigate(`/expense-details?month=${format(selectedDate, "yyyy-MM")}`)}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Despesas do Mês
