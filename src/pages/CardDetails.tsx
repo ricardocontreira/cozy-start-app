@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceUploader } from "@/components/InvoiceUploader";
 import { UploadHistory } from "@/components/UploadHistory";
-import { TransactionsList } from "@/components/TransactionsList";
+import { InvoicesList } from "@/components/InvoicesList";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -345,14 +345,14 @@ export default function CardDetails() {
 
       {/* Tabs */}
       <div className="max-w-4xl mx-auto px-4 md:px-6">
-        <Tabs defaultValue="transactions" className="w-full">
+        <Tabs defaultValue="invoices" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="transactions">Transações</TabsTrigger>
+            <TabsTrigger value="invoices">Faturas</TabsTrigger>
             <TabsTrigger value="import">Importar Fatura</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="transactions" className="space-y-6 mt-6">
-            <TransactionsList cardId={cardId!} houseId={currentHouse?.id || ""} />
+          <TabsContent value="invoices" className="space-y-6 mt-6">
+            <InvoicesList cardId={cardId!} houseId={currentHouse?.id || ""} />
           </TabsContent>
 
           <TabsContent value="import" className="space-y-6 mt-6">

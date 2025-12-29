@@ -12,6 +12,7 @@ import HouseSetup from "./pages/HouseSetup";
 import Dashboard from "./pages/Dashboard";
 import Cards from "./pages/Cards";
 import CardDetails from "./pages/CardDetails";
+import CardInvoiceDetails from "./pages/CardInvoiceDetails";
 import ExpenseDetails from "./pages/ExpenseDetails";
 import IncomeDetails from "./pages/IncomeDetails";
 import Settings from "./pages/Settings";
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/cards" element={<Cards />} />
               <Route path="/cards/:cardId" element={<CardDetails />} />
+              <Route path="/cards/:cardId/invoice/:month" element={<CardInvoiceDetails />} />
               <Route path="/expense-details" element={<ExpenseDetails />} />
               <Route path="/income-details" element={<IncomeDetails />} />
               <Route path="/settings" element={<Settings />} />
