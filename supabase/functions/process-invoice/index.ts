@@ -225,15 +225,68 @@ ${fileContent}`;
       );
     }
 
-    // Insert transactions with calculated billing_month
-    const transactionsToInsert = transactions.map((t: TransactionData) => ({
+    const billingMonth = getBillingMonthFromInvoice(invoiceMonth);
+
+    // Buscar transações existentes para evitar duplicatas
+    const { data: existingTransactions, error: existingError } = await supabaseAdmin
+      .from("transactions")
+      .select("description, amount, transaction_date")
+      .eq("card_id", cardId)
+      .eq("billing_month", billingMonth);
+
+    if (existingError) {
+      console.error("Error fetching existing transactions:", existingError);
+    }
+
+    const existingList = existingTransactions || [];
+
+    // Função para verificar se uma transação é duplicata (sem considerar installment)
+    function isDuplicate(
+      newTx: TransactionData,
+      existingList: Array<{ description: string; amount: number; transaction_date: string }>
+    ): boolean {
+      return existingList.some(
+        (existing) =>
+          existing.description === newTx.description &&
+          Number(existing.amount) === Math.abs(newTx.amount) &&
+          existing.transaction_date === newTx.date
+      );
+    }
+
+    // Filtrar transações novas (não duplicadas)
+    const newTransactions = transactions.filter((t: TransactionData) => !isDuplicate(t, existingList));
+    const skippedCount = transactions.length - newTransactions.length;
+
+    console.log(`Found ${transactions.length} transactions, ${skippedCount} already exist, ${newTransactions.length} are new`);
+
+    // Se todas as transações já existem
+    if (newTransactions.length === 0 && transactions.length > 0) {
+      await supabaseAdmin
+        .from("upload_logs")
+        .update({ status: "completed", items_count: 0 })
+        .eq("id", uploadId);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          uploadId,
+          itemsCount: 0,
+          skippedCount,
+          message: "Todas as transações já existem. Nenhuma nova foi importada.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Inserir apenas transações novas
+    const transactionsToInsert = newTransactions.map((t: TransactionData) => ({
       house_id: houseId,
       card_id: cardId,
       upload_id: uploadId,
       description: t.description,
       amount: Math.abs(t.amount),
       transaction_date: t.date,
-      billing_month: getBillingMonthFromInvoice(invoiceMonth),
+      billing_month: billingMonth,
       installment: t.installment || null,
       category: t.category || "Não classificado",
       created_by: userId,
@@ -255,20 +308,25 @@ ${fileContent}`;
     // Update upload log with success
     await supabaseAdmin
       .from("upload_logs")
-      .update({ 
-        status: "completed", 
-        items_count: transactions.length 
+      .update({
+        status: "completed",
+        items_count: newTransactions.length,
       })
       .eq("id", uploadId);
 
-    console.log(`Successfully processed ${transactions.length} transactions`);
+    console.log(`Successfully processed ${newTransactions.length} transactions, skipped ${skippedCount} duplicates`);
+
+    const message = skippedCount > 0
+      ? `${newTransactions.length} transações importadas. ${skippedCount} já existiam e foram ignoradas.`
+      : `${newTransactions.length} transações importadas com sucesso!`;
 
     return new Response(
       JSON.stringify({
         success: true,
         uploadId,
-        itemsCount: transactions.length,
-        message: `${transactions.length} transações importadas com sucesso!`,
+        itemsCount: newTransactions.length,
+        skippedCount,
+        message,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
