@@ -19,6 +19,7 @@ import { InvoiceUploader } from "@/components/InvoiceUploader";
 import { UploadHistory } from "@/components/UploadHistory";
 import { TransactionsList } from "@/components/TransactionsList";
 import { TransactionSummary } from "@/components/TransactionSummary";
+import { AddExpenseButton } from "@/components/AddExpenseButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCardTransactions } from "@/hooks/useCardTransactions";
 import {
@@ -357,7 +358,16 @@ export default function CardDetails() {
           </TabsList>
 
           <TabsContent value="transactions" className="space-y-6 mt-6">
-            <TransactionSummary summary={summary} />
+            <div className="flex justify-between items-center">
+              <TransactionSummary summary={summary} />
+              {isOwner && (
+                <AddExpenseButton
+                  preselectedCardId={cardId}
+                  variant="outline"
+                  size="sm"
+                />
+              )}
+            </div>
             <TransactionsList cardId={cardId!} houseId={currentHouse?.id || ""} />
           </TabsContent>
 
