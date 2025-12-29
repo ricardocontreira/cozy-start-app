@@ -5,7 +5,6 @@ import { AddExpenseDialog } from "@/components/AddExpenseDialog";
 
 interface AddExpenseButtonProps {
   onSuccess?: () => void;
-  preselectedCardId?: string;
   variant?: "default" | "outline" | "ghost" | "fab";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
@@ -13,7 +12,6 @@ interface AddExpenseButtonProps {
 
 export function AddExpenseButton({
   onSuccess,
-  preselectedCardId,
   variant = "default",
   size = "default",
   className,
@@ -33,7 +31,6 @@ export function AddExpenseButton({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           onSuccess={onSuccess}
-          preselectedCardId={preselectedCardId}
         />
       </>
     );
@@ -54,7 +51,6 @@ export function AddExpenseButton({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSuccess={onSuccess}
-        preselectedCardId={preselectedCardId}
       />
     </>
   );

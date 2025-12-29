@@ -45,7 +45,6 @@ const expenseSchema = z.object({
   amount: z.number().positive("Valor deve ser maior que zero"),
   category: z.string().min(1, "Selecione uma categoria"),
   transaction_date: z.date({ required_error: "Selecione uma data" }),
-  card_id: z.string().optional(),
   expense_type: z.enum(["single", "recurring"]),
   duration_months: z.number().optional(),
 });
@@ -56,7 +55,6 @@ interface AddExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  preselectedCardId?: string;
 }
 
 const DURATION_OPTIONS = [
@@ -70,13 +68,11 @@ export function AddExpenseDialog({
   open,
   onOpenChange,
   onSuccess,
-  preselectedCardId,
 }: AddExpenseDialogProps) {
   const { user } = useAuth();
   const { currentHouse } = useHouse();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [cards, setCards] = useState<{ id: string; name: string; closing_day: number | null }[]>([]);
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -85,38 +81,12 @@ export function AddExpenseDialog({
       amount: 0,
       category: "",
       transaction_date: new Date(),
-      card_id: preselectedCardId || "",
       expense_type: "single",
       duration_months: 12,
     },
   });
 
   const expenseType = form.watch("expense_type");
-  const selectedCardId = form.watch("card_id");
-
-  // Fetch cards when dialog opens
-  useEffect(() => {
-    if (open && currentHouse?.id) {
-      fetchCards();
-    }
-  }, [open, currentHouse?.id]);
-
-  // Set preselected card when provided
-  useEffect(() => {
-    if (preselectedCardId) {
-      form.setValue("card_id", preselectedCardId);
-    }
-  }, [preselectedCardId, form]);
-
-  const fetchCards = async () => {
-    if (!currentHouse?.id) return;
-    const { data } = await supabase
-      .from("credit_cards")
-      .select("id, name, closing_day")
-      .eq("house_id", currentHouse.id)
-      .order("name");
-    setCards(data || []);
-  };
 
   const handleSubmit = async (data: ExpenseFormData) => {
     if (!currentHouse?.id || !user?.id) return;
@@ -124,8 +94,7 @@ export function AddExpenseDialog({
     setSubmitting(true);
 
     try {
-      const selectedCard = cards.find((c) => c.id === data.card_id);
-      const closingDay = selectedCard?.closing_day || 20;
+      const closingDay = 20; // Default closing day for non-card expenses
 
       if (data.expense_type === "single") {
         // Single expense
@@ -139,7 +108,7 @@ export function AddExpenseDialog({
           category: data.category,
           transaction_date: format(data.transaction_date, "yyyy-MM-dd"),
           billing_month: format(billingInfo.billingMonth, "yyyy-MM-01"),
-          card_id: data.card_id || null,
+          card_id: null,
           installment: null,
           type: "expense",
         });
@@ -168,7 +137,7 @@ export function AddExpenseDialog({
             category: data.category,
             transaction_date: format(transactionDate, "yyyy-MM-dd"),
             billing_month: format(billingMonth, "yyyy-MM-01"),
-            card_id: data.card_id || null,
+            card_id: null,
             installment: null,
             type: "expense",
           });
@@ -304,26 +273,6 @@ export function AddExpenseDialog({
             </Popover>
           </div>
 
-          {/* Card (optional) */}
-          <div className="space-y-2">
-            <Label>Cartão (opcional)</Label>
-            <Select
-              value={selectedCardId || "none"}
-              onValueChange={(value) => form.setValue("card_id", value === "none" ? "" : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Nenhum cartão" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum cartão</SelectItem>
-                {cards.map((card) => (
-                  <SelectItem key={card.id} value={card.id}>
-                    {card.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           {/* Expense Type */}
           <div className="space-y-3">
