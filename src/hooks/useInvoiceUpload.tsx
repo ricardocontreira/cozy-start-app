@@ -64,11 +64,21 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     });
   };
 
-  const uploadInvoice = async (file: File): Promise<boolean> => {
+  const uploadInvoice = async (file: File, invoiceMonth: string): Promise<boolean> => {
     if (!cardId || !houseId) {
       toast({
         title: "Erro",
         description: "Cartão ou casa não selecionados",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Validate invoiceMonth format (YYYY-MM)
+    if (!invoiceMonth || !/^\d{4}-\d{2}$/.test(invoiceMonth)) {
+      toast({
+        title: "Erro",
+        description: "Mês da fatura inválido",
         variant: "destructive",
       });
       return false;
@@ -85,6 +95,7 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
           filename: file.name,
           cardId,
           houseId,
+          invoiceMonth,
         },
       });
 
