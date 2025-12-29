@@ -6,7 +6,7 @@ import { useToast } from "./use-toast";
 export interface House {
   id: string;
   name: string;
-  invite_code: string;
+  invite_code: string | null; // Now nullable - only owners can see it
   owner_id: string;
   created_at: string;
 }
@@ -41,19 +41,39 @@ export function useHouse() {
       if (memberData && memberData.length > 0) {
         const houseIds = memberData.map((m) => m.house_id);
         
+        // Don't select invite_code - it's sensitive data
         const { data: housesData, error: housesError } = await supabase
           .from("houses")
-          .select("*")
+          .select("id, name, owner_id, created_at, updated_at")
           .in("id", houseIds);
 
         if (housesError) throw housesError;
 
-        setHouses(housesData || []);
+        // For each house where user is owner, fetch invite_code securely
+        const housesWithCodes: House[] = [];
+        for (const house of housesData || []) {
+          const memberInfo = memberData.find((m) => m.house_id === house.id);
+          let inviteCode: string | null = null;
+          
+          if (memberInfo?.role === "owner") {
+            const { data: code } = await supabase.rpc("get_house_invite_code", {
+              house_id_param: house.id,
+            });
+            inviteCode = code;
+          }
+          
+          housesWithCodes.push({
+            ...house,
+            invite_code: inviteCode,
+          });
+        }
+
+        setHouses(housesWithCodes);
         
         // Set first house as current if none selected
-        if (housesData && housesData.length > 0 && !currentHouse) {
-          setCurrentHouse(housesData[0]);
-          const role = memberData.find((m) => m.house_id === housesData[0].id)?.role;
+        if (housesWithCodes.length > 0 && !currentHouse) {
+          setCurrentHouse(housesWithCodes[0]);
+          const role = memberData.find((m) => m.house_id === housesWithCodes[0].id)?.role;
           setMemberRole(role as "owner" | "viewer" || null);
         }
       } else {

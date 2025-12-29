@@ -301,6 +301,10 @@ export type Database = {
     }
     Functions: {
       create_house_with_owner: { Args: { house_name: string }; Returns: string }
+      get_house_invite_code: {
+        Args: { house_id_param: string }
+        Returns: string
+      }
       get_house_role: {
         Args: { _house_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
