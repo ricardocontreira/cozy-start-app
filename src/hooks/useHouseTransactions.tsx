@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { getBillingMonth, generateInstallmentProjections, type ProjectedTransaction } from "@/lib/billingUtils";
 
@@ -130,7 +132,12 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
   const enrichedTransactions = useMemo(() => {
     return rawTransactions.flatMap((txn): EnrichedTransaction[] => {
       const card = txn.card_id ? cardsMap.get(txn.card_id) : null;
-      const closingDay = card?.closing_day || DEFAULT_CLOSING_DAY;
+      
+      // Validar closingDay: deve estar entre 1 e 28
+      const closingDay = 
+        card?.closing_day && card.closing_day >= 1 && card.closing_day <= 28
+          ? card.closing_day
+          : DEFAULT_CLOSING_DAY;
 
       const billingInfo = getBillingMonth(new Date(txn.transaction_date), closingDay);
 
@@ -150,6 +157,21 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
       return [enriched, ...projections];
     });
   }, [rawTransactions, cardsMap]);
+
+  // Log temporário para debug - verificar projeções
+  useEffect(() => {
+    if (enrichedTransactions.length > 0) {
+      const projections = enrichedTransactions.filter(t => t.isProjection);
+      console.log(`[Debug] Total: ${enrichedTransactions.length} | Projeções: ${projections.length}`);
+      
+      // Mostrar primeiras 5 projeções como exemplo
+      projections.slice(0, 5).forEach(p => {
+        console.log(
+          `  → ${p.description} | ${p.installment} | Billing: ${format(p.billingMonth, "MMM/yyyy", { locale: ptBR })}`
+        );
+      });
+    }
+  }, [enrichedTransactions]);
 
   useEffect(() => {
     fetchData();

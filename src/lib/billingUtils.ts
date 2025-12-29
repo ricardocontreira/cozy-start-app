@@ -60,8 +60,11 @@ export function getBillingMonth(
 /**
  * Gera projeções de parcelas futuras
  * 
- * Exemplo: Compra parcelada em 6x, parcela atual 2/6
- * Gera parcelas 3/6, 4/6, 5/6, 6/6 com meses de cobrança incrementais
+ * Exemplo: Compra parcelada em 10x, parcela atual 05/10
+ * Gera parcelas 06/10, 07/10, 08/10, 09/10, 10/10 com meses de cobrança incrementais
+ * 
+ * Regra: Parcela X/Y em mês M -> Próximas parcelas são X+1, X+2... até Y
+ *        Cada parcela futura é adicionada +1 mês a partir do billing da parcela original
  */
 export function generateInstallmentProjections(
   transaction: {
@@ -79,19 +82,60 @@ export function generateInstallmentProjections(
   },
   closingDay: number
 ): ProjectedTransaction[] {
-  const installmentMatch = transaction.installment?.match(/(\d+)\/(\d+)/);
-  if (!installmentMatch) return [];
+  // 1. Validação inicial - campo vazio ou nulo
+  if (!transaction.installment || transaction.installment.trim() === "") {
+    return [];
+  }
 
-  const currentInstallment = parseInt(installmentMatch[1]);
-  const totalInstallments = parseInt(installmentMatch[2]);
+  // 2. Regex com âncoras para match exato do formato X/Y
+  const trimmedInstallment = transaction.installment.trim();
+  const installmentMatch = trimmedInstallment.match(/^(\d+)\/(\d+)$/);
 
-  // Se já é a última parcela, não gera projeções
-  if (currentInstallment >= totalInstallments) return [];
+  if (!installmentMatch) {
+    console.warn(`[Billing] Formato inválido de parcela: "${transaction.installment}"`);
+    return [];
+  }
+
+  // 3. parseInt com radix 10 EXPLÍCITO para evitar problemas com zeros à esquerda
+  const currentInstallment = parseInt(installmentMatch[1], 10);
+  const totalInstallments = parseInt(installmentMatch[2], 10);
+
+  // 4. Validações de sanidade
+  if (isNaN(currentInstallment) || isNaN(totalInstallments)) {
+    console.warn(`[Billing] Parcela com NaN: ${transaction.installment}`);
+    return [];
+  }
+
+  if (currentInstallment <= 0 || totalInstallments <= 0) {
+    console.warn(`[Billing] Parcela com valor <= 0: ${transaction.installment}`);
+    return [];
+  }
+
+  if (currentInstallment > totalInstallments) {
+    console.warn(`[Billing] Parcela atual > total: ${transaction.installment}`);
+    return [];
+  }
+
+  // 5. Se já é a última parcela, não gera projeções
+  if (currentInstallment >= totalInstallments) {
+    return [];
+  }
 
   const projections: ProjectedTransaction[] = [];
   const baseBilling = getBillingMonth(new Date(transaction.transaction_date), closingDay);
 
+  // 6. Log de debug para acompanhar o fluxo
+  console.log(
+    `[Billing] ${transaction.description}: Parcela ${currentInstallment}/${totalInstallments} ` +
+    `| Base: ${format(baseBilling.billingMonth, "MMM/yyyy", { locale: ptBR })} ` +
+    `| Gerando ${totalInstallments - currentInstallment} projeções`
+  );
+
+  // 7. Loop: gera parcelas de (X+1) até Y
+  //    Exemplo: 05/10 -> gera 06/10, 07/10, 08/10, 09/10, 10/10
   for (let i = currentInstallment + 1; i <= totalInstallments; i++) {
+    // monthsAhead: quantos meses à frente da parcela original
+    // Para i=6 (quando X=5): monthsAhead = 6-5 = 1 mês à frente
     const monthsAhead = i - currentInstallment;
     const projectedBillingMonth = addMonths(baseBilling.billingMonth, monthsAhead);
 
