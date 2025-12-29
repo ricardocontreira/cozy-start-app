@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { format } from "date-fns";
+import { addMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { getBillingMonth, generateInstallmentProjections, type ProjectedTransaction } from "@/lib/billingUtils";
+import { getBillingMonth } from "@/lib/billingUtils";
 
 interface Transaction {
   id: string;
@@ -16,6 +16,7 @@ interface Transaction {
   created_by: string;
   created_at: string;
   updated_at: string;
+  billing_month: string | null;
 }
 
 interface CreditCard {
@@ -139,20 +140,65 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
           ? card.closing_day
           : DEFAULT_CLOSING_DAY;
 
-      const billingInfo = getBillingMonth(new Date(txn.transaction_date), closingDay);
+      // CORREÇÃO: Usar billing_month do banco como fonte de verdade
+      // Se billing_month existe, usar ele; senão, calcular a partir de transaction_date
+      let baseBillingMonth: Date;
+      let isDeferred = false;
+
+      if (txn.billing_month) {
+        // Normalizar para evitar problemas de timezone: criar Date com ano/mês explícitos
+        const [year, month] = txn.billing_month.split('-').map(Number);
+        baseBillingMonth = new Date(year, month - 1, 1);
+      } else {
+        const billingInfo = getBillingMonth(new Date(txn.transaction_date), closingDay);
+        baseBillingMonth = billingInfo.billingMonth;
+        isDeferred = billingInfo.isDeferred;
+      }
 
       const enriched: EnrichedTransaction = {
         ...txn,
-        billingMonth: billingInfo.billingMonth,
-        isDeferred: billingInfo.isDeferred,
+        billingMonth: baseBillingMonth,
+        isDeferred,
         isProjection: false,
-        deferredMessage: billingInfo.isDeferred
+        deferredMessage: isDeferred
           ? "Esta compra foi feita após o fechamento e aparecerá na próxima fatura"
           : undefined,
       };
 
-      // Generate projections for installments
-      const projections = generateInstallmentProjections(txn, closingDay);
+      // Gerar projeções ancoradas no baseBillingMonth (mês de inserção)
+      const projections: EnrichedTransaction[] = [];
+
+      if (txn.installment && txn.installment.trim() !== "") {
+        const match = txn.installment.trim().match(/^(\d+)\/(\d+)$/);
+        if (match) {
+          const currentInstallment = parseInt(match[1], 10);
+          const totalInstallments = parseInt(match[2], 10);
+
+          if (
+            !isNaN(currentInstallment) &&
+            !isNaN(totalInstallments) &&
+            currentInstallment > 0 &&
+            totalInstallments > 0 &&
+            currentInstallment < totalInstallments
+          ) {
+            // Gerar parcelas de (X+1) até Y, ancoradas no baseBillingMonth
+            for (let i = currentInstallment + 1; i <= totalInstallments; i++) {
+              const monthsAhead = i - currentInstallment;
+              const projectedBillingMonth = addMonths(baseBillingMonth, monthsAhead);
+
+              projections.push({
+                ...txn,
+                id: `${txn.id}_projected_${i}`,
+                installment: `${i}/${totalInstallments}`,
+                billingMonth: projectedBillingMonth,
+                isProjection: true,
+                isDeferred: false,
+                deferredMessage: undefined,
+              });
+            }
+          }
+        }
+      }
 
       return [enriched, ...projections];
     });
