@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HouseMembersList } from "@/components/HouseMembersList";
 import { LeaveHouseDialog } from "@/components/LeaveHouseDialog";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function Settings() {
   const { user, loading: authLoading } = useAuth();
@@ -269,6 +270,9 @@ export default function Settings() {
         onConfirm={handleLeaveHouse}
         houseName={currentHouse.name}
       />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav activeRoute="settings" />
     </div>
   );
 }

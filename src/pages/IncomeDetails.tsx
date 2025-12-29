@@ -12,11 +12,8 @@ import {
   Tag,
   Receipt,
   Plus,
-  LayoutDashboard,
-  CreditCard,
-  Wallet,
-  Settings,
 } from "lucide-react";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import {
   PieChart,
   Pie,
@@ -497,26 +494,8 @@ export default function IncomeDetails() {
       </Button>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/dashboard")}>
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-xs">Início</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/cards")}>
-            <CreditCard className="w-5 h-5" />
-            <span className="text-xs">Cartões</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1 text-primary">
-            <Wallet className="w-5 h-5" />
-            <span className="text-xs">Transações</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/settings")}>
-            <Settings className="w-5 h-5" />
-            <span className="text-xs">Config</span>
-          </Button>
-        </div>
-      </nav>
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav activeRoute="transactions" />
 
       <AddIncomeDialog
         open={dialogOpen}

@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LayoutDashboard, LogOut, Copy, Check, Users, ChevronRight } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight } from "lucide-react";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -409,36 +410,7 @@ export default function Dashboard() {
       <AddTransactionFab />
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1">
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-xs">Início</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex-col h-auto py-2 gap-1"
-            onClick={() => navigate("/cards")}
-          >
-            <CreditCard className="w-5 h-5" />
-            <span className="text-xs">Cartões</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1">
-            <Wallet className="w-5 h-5" />
-            <span className="text-xs">Transações</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex-col h-auto py-2 gap-1"
-            onClick={() => navigate("/settings")}
-          >
-            <Settings className="w-5 h-5" />
-            <span className="text-xs">Config</span>
-          </Button>
-        </div>
-      </nav>
+      <MobileBottomNav activeRoute="dashboard" />
     </div>
   );
 }
