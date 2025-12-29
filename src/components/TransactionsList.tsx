@@ -1,6 +1,6 @@
 import { ArrowDownUp, Filter, Receipt } from "lucide-react";
 import { useCardTransactions } from "@/hooks/useCardTransactions";
-import { TransactionItem } from "@/components/TransactionItem";
+import { EditableTransactionItem } from "@/components/EditableTransactionItem";
 import { TransactionSummary } from "@/components/TransactionSummary";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,7 @@ export function TransactionsList({ cardId, houseId }: TransactionsListProps) {
     sortOrder,
     filterByCategory,
     sortBy,
+    refreshTransactions,
   } = useCardTransactions({ cardId, houseId });
 
   if (isLoading) {
@@ -129,7 +130,11 @@ export function TransactionsList({ cardId, houseId }: TransactionsListProps) {
       {/* Transactions List */}
       <div className="divide-y divide-border rounded-lg border bg-card">
         {transactions.map((transaction) => (
-          <TransactionItem key={transaction.id} transaction={transaction} />
+          <EditableTransactionItem
+            key={transaction.id}
+            transaction={transaction}
+            onCategoryUpdated={refreshTransactions}
+          />
         ))}
       </div>
     </div>
