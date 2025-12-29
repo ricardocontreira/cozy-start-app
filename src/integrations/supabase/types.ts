@@ -222,6 +222,7 @@ export type Database = {
       }
       upload_logs: {
         Row: {
+          billing_month: string | null
           card_id: string
           created_at: string
           filename: string
@@ -232,6 +233,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_month?: string | null
           card_id: string
           created_at?: string
           filename: string
@@ -242,6 +244,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_month?: string | null
           card_id?: string
           created_at?: string
           filename?: string

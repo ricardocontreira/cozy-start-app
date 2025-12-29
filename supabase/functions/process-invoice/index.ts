@@ -91,6 +91,9 @@ serve(async (req) => {
       return `${year}-${String(month).padStart(2, '0')}-01`;
     }
 
+    // Calculate billing month early to save in upload log
+    const billingMonth = getBillingMonthFromInvoice(invoiceMonth);
+
     // Create upload log entry
     const { data: uploadLog, error: uploadError } = await supabaseAdmin
       .from("upload_logs")
@@ -100,6 +103,7 @@ serve(async (req) => {
         user_id: userId,
         filename: filename,
         status: "processing",
+        billing_month: billingMonth,
       })
       .select()
       .single();
@@ -225,9 +229,7 @@ ${fileContent}`;
       );
     }
 
-    const billingMonth = getBillingMonthFromInvoice(invoiceMonth);
-
-    // Buscar transações existentes para evitar duplicatas
+    // Buscar transações existentes para evitar duplicatas (billingMonth já calculado acima)
     const { data: existingTransactions, error: existingError } = await supabaseAdmin
       .from("transactions")
       .select("description, amount, transaction_date")
