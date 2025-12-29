@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getBillingMonth, generateInstallmentProjections, type ProjectedTransaction } from "@/lib/billingUtils";
 
 interface Transaction {
   id: string;
@@ -15,6 +16,19 @@ interface Transaction {
   updated_at: string;
 }
 
+interface CreditCard {
+  id: string;
+  closing_day: number | null;
+  due_day: number | null;
+}
+
+export interface EnrichedTransaction extends Transaction {
+  billingMonth: Date;
+  isDeferred: boolean;
+  isProjection: boolean;
+  deferredMessage?: string;
+}
+
 interface HouseTransactionsSummary {
   totalExpenses: number;
   count: number;
@@ -26,14 +40,18 @@ interface UseHouseTransactionsOptions {
 }
 
 interface UseHouseTransactionsReturn {
-  transactions: Transaction[];
+  transactions: EnrichedTransaction[];
+  rawTransactions: Transaction[];
   summary: HouseTransactionsSummary;
   isLoading: boolean;
   refetch: () => void;
 }
 
+const DEFAULT_CLOSING_DAY = 20;
+
 export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): UseHouseTransactionsReturn {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [rawTransactions, setRawTransactions] = useState<Transaction[]>([]);
+  const [cardsMap, setCardsMap] = useState<Map<string, CreditCard>>(new Map());
   const [summary, setSummary] = useState<HouseTransactionsSummary>({
     totalExpenses: 0,
     count: 0,
@@ -41,9 +59,10 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!houseId) {
-      setTransactions([]);
+      setRawTransactions([]);
+      setCardsMap(new Map());
       setSummary({ totalExpenses: 0, count: 0, byCategory: {} });
       setIsLoading(false);
       return;
@@ -52,18 +71,31 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("house_id", houseId)
-        .order("transaction_date", { ascending: false });
+      // Fetch cards and transactions in parallel
+      const [cardsResult, transactionsResult] = await Promise.all([
+        supabase
+          .from("credit_cards")
+          .select("id, closing_day, due_day")
+          .eq("house_id", houseId),
+        supabase
+          .from("transactions")
+          .select("*")
+          .eq("house_id", houseId)
+          .order("transaction_date", { ascending: false }),
+      ]);
 
-      if (error) throw error;
+      if (cardsResult.error) throw cardsResult.error;
+      if (transactionsResult.error) throw transactionsResult.error;
 
-      const transactionsData = data || [];
-      setTransactions(transactionsData);
+      // Build cards map
+      const map = new Map<string, CreditCard>();
+      cardsResult.data?.forEach((card) => map.set(card.id, card));
+      setCardsMap(map);
 
-      // Calculate summary
+      const transactionsData = transactionsResult.data || [];
+      setRawTransactions(transactionsData);
+
+      // Calculate summary (based on raw transactions)
       const byCategory: Record<string, { total: number; count: number }> = {};
       let totalExpenses = 0;
 
@@ -86,21 +118,48 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
       });
     } catch (error) {
       console.error("Error fetching house transactions:", error);
-      setTransactions([]);
+      setRawTransactions([]);
+      setCardsMap(new Map());
       setSummary({ totalExpenses: 0, count: 0, byCategory: {} });
     } finally {
       setIsLoading(false);
     }
   }, [houseId]);
 
+  // Enrich transactions with billing info and projections
+  const enrichedTransactions = useMemo(() => {
+    return rawTransactions.flatMap((txn): EnrichedTransaction[] => {
+      const card = txn.card_id ? cardsMap.get(txn.card_id) : null;
+      const closingDay = card?.closing_day || DEFAULT_CLOSING_DAY;
+
+      const billingInfo = getBillingMonth(new Date(txn.transaction_date), closingDay);
+
+      const enriched: EnrichedTransaction = {
+        ...txn,
+        billingMonth: billingInfo.billingMonth,
+        isDeferred: billingInfo.isDeferred,
+        isProjection: false,
+        deferredMessage: billingInfo.isDeferred
+          ? "Esta compra foi feita após o fechamento e aparecerá na próxima fatura"
+          : undefined,
+      };
+
+      // Generate projections for installments
+      const projections = generateInstallmentProjections(txn, closingDay);
+
+      return [enriched, ...projections];
+    });
+  }, [rawTransactions, cardsMap]);
+
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    fetchData();
+  }, [fetchData]);
 
   return {
-    transactions,
+    transactions: enrichedTransactions,
+    rawTransactions,
     summary,
     isLoading,
-    refetch: fetchTransactions,
+    refetch: fetchData,
   };
 }

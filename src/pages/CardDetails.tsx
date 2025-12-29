@@ -53,6 +53,8 @@ const cardSchema = z.object({
   brand: z.enum(["visa", "mastercard", "elo"]),
   last_digits: z.string().length(4, "Deve ter exatamente 4 dígitos").regex(/^\d+$/, "Apenas números"),
   color: z.string(),
+  closing_day: z.number().min(1).max(28),
+  due_day: z.number().min(1).max(28),
 });
 
 type CardFormData = z.infer<typeof cardSchema>;
@@ -63,7 +65,12 @@ interface CreditCardData {
   brand: "visa" | "mastercard" | "elo";
   last_digits: string;
   color: string;
+  closing_day: number;
+  due_day: number;
 }
+
+// Days options for select
+const daysOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
 const brandIcons: Record<string, string> = {
   visa: "💳",
@@ -117,6 +124,8 @@ export default function CardDetails() {
       brand: "visa",
       last_digits: "",
       color: cardColors[0],
+      closing_day: 20,
+      due_day: 10,
     },
   });
 
@@ -150,6 +159,8 @@ export default function CardDetails() {
         brand: data.brand,
         last_digits: data.last_digits,
         color: data.color,
+        closing_day: data.closing_day || 20,
+        due_day: data.due_day || 10,
       });
     } catch (error) {
       console.error("Error fetching card:", error);
@@ -177,6 +188,8 @@ export default function CardDetails() {
           brand: data.brand,
           last_digits: data.last_digits,
           color: data.color,
+          closing_day: data.closing_day,
+          due_day: data.due_day,
         })
         .eq("id", cardId);
 
@@ -447,6 +460,46 @@ export default function CardDetails() {
                   {form.formState.errors.last_digits.message}
                 </p>
               )}
+            </div>
+
+            {/* Closing and Due Day */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-closing-day">Dia de fechamento</Label>
+                <Select
+                  value={form.watch("closing_day")?.toString()}
+                  onValueChange={(value) => form.setValue("closing_day", parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {daysOptions.map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        Dia {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-due-day">Dia de vencimento</Label>
+                <Select
+                  value={form.watch("due_day")?.toString()}
+                  onValueChange={(value) => form.setValue("due_day", parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {daysOptions.map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        Dia {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">

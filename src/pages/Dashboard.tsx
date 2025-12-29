@@ -38,7 +38,7 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Calculate monthly expenses using useMemo for performance
+  // Calculate monthly expenses using billingMonth for accurate projection
   const monthlyExpenses = useMemo(() => {
     if (!transactions.length) return 0;
     
@@ -47,9 +47,10 @@ export default function Dashboard() {
     
     return transactions
       .filter(txn => {
-        const txnDate = new Date(txn.transaction_date);
-        return txnDate.getMonth() === selectedMonth && 
-               txnDate.getFullYear() === selectedYear;
+        // Use billingMonth for filtering (accounts for closing day logic)
+        const billingMonth = txn.billingMonth;
+        return billingMonth.getMonth() === selectedMonth && 
+               billingMonth.getFullYear() === selectedYear;
       })
       .reduce((sum, txn) => sum + Number(txn.amount), 0);
   }, [transactions, selectedDate]);
