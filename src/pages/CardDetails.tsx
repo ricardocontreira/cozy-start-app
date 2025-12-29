@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Loader2, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Loader2, FileSpreadsheet, LayoutDashboard, CreditCard, Wallet, Settings } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,10 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceUploader } from "@/components/InvoiceUploader";
 import { UploadHistory } from "@/components/UploadHistory";
 import { TransactionsList } from "@/components/TransactionsList";
-import { TransactionSummary } from "@/components/TransactionSummary";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCardTransactions } from "@/hooks/useCardTransactions";
 import {
   Dialog,
   DialogContent,
@@ -111,11 +109,6 @@ export default function CardDetails() {
   } = useInvoiceUpload({ 
     cardId: cardId || "", 
     houseId: currentHouse?.id || "" 
-  });
-
-  const { summary } = useCardTransactions({
-    cardId: cardId || "",
-    houseId: currentHouse?.id || "",
   });
 
   const form = useForm<CardFormData>({
@@ -358,7 +351,6 @@ export default function CardDetails() {
           </TabsList>
 
           <TabsContent value="transactions" className="space-y-6 mt-6">
-            <TransactionSummary summary={summary} />
             <TransactionsList cardId={cardId!} houseId={currentHouse?.id || ""} />
           </TabsContent>
 
@@ -537,6 +529,28 @@ export default function CardDetails() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="flex items-center justify-around py-2">
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/dashboard")}>
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-xs">Início</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1 text-primary" onClick={() => navigate("/cards")}>
+            <CreditCard className="w-5 h-5" />
+            <span className="text-xs">Cartões</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1">
+            <Wallet className="w-5 h-5" />
+            <span className="text-xs">Transações</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/settings")}>
+            <Settings className="w-5 h-5" />
+            <span className="text-xs">Config</span>
+          </Button>
+        </div>
+      </nav>
     </div>
   );
 }
