@@ -80,6 +80,36 @@ serve(async (req) => {
       throw new Error("Only house owners can upload invoices");
     }
 
+    // Buscar closing_day do cartão para calcular billing_month
+    const { data: cardData, error: cardError } = await supabaseAdmin
+      .from("credit_cards")
+      .select("closing_day")
+      .eq("id", cardId)
+      .single();
+
+    if (cardError) {
+      console.error("Error fetching card data:", cardError);
+    }
+
+    const closingDay = cardData?.closing_day ?? 20;
+
+    // Função auxiliar para calcular billing_month baseado na data e fechamento
+    function calculateBillingMonth(transactionDate: string, closingDay: number): string {
+      const date = new Date(transactionDate);
+      const day = date.getUTCDate();
+      const month = date.getUTCMonth();
+      const year = date.getUTCFullYear();
+
+      if (day > closingDay) {
+        // Após fechamento -> mês seguinte
+        const nextMonth = month === 11 ? 0 : month + 1;
+        const nextYear = month === 11 ? year + 1 : year;
+        return `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+      }
+      
+      return `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    }
+
     // Create upload log entry
     const { data: uploadLog, error: uploadError } = await supabaseAdmin
       .from("upload_logs")
@@ -214,7 +244,7 @@ ${fileContent}`;
       );
     }
 
-    // Insert transactions
+    // Insert transactions with calculated billing_month
     const transactionsToInsert = transactions.map((t: TransactionData) => ({
       house_id: houseId,
       card_id: cardId,
@@ -222,6 +252,7 @@ ${fileContent}`;
       description: t.description,
       amount: Math.abs(t.amount),
       transaction_date: t.date,
+      billing_month: calculateBillingMonth(t.date, closingDay),
       installment: t.installment || null,
       category: t.category || "Não classificado",
       created_by: userId,
