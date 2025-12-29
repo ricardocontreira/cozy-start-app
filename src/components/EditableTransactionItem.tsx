@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertCircle, CalendarClock, Pencil } from "lucide-react";
+import { AlertCircle, CalendarClock, CreditCard, Pencil, Repeat } from "lucide-react";
 import type { Transaction } from "@/hooks/useCardTransactions";
 import type { EnrichedTransaction } from "@/hooks/useHouseTransactions";
 import { CATEGORIES, getCategoryStyle } from "@/lib/categories";
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EditTransactionDialog } from "./EditTransactionDialog";
 
 interface EditableTransactionItemProps {
   transaction: Transaction | EnrichedTransaction;
@@ -43,12 +44,23 @@ function isProjectedTransaction(txn: Transaction | EnrichedTransaction): boolean
   return txn.id.includes("_projected_");
 }
 
+// Check if it's a card transaction (not editable - must use invoice upload)
+function isCardTransaction(txn: Transaction | EnrichedTransaction): boolean {
+  return !!txn.card_id;
+}
+
+// Check if it's a recurring transaction
+function isRecurringTransaction(txn: Transaction | EnrichedTransaction): boolean {
+  return !!(txn as any).recurrence_id;
+}
+
 export function EditableTransactionItem({
   transaction,
   onCategoryUpdated,
 }: EditableTransactionItemProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const categoryStyle = getCategoryStyle(transaction.category);
@@ -66,10 +78,13 @@ export function EditableTransactionItem({
   const isDeferred = isEnriched && transaction.isDeferred;
   const isProjection = isEnriched && transaction.isProjection;
   const deferredMessage = isEnriched ? transaction.deferredMessage : undefined;
-  const isEditable = !isProjectedTransaction(transaction);
+  const isFromCard = isCardTransaction(transaction);
+  const isRecurring = isRecurringTransaction(transaction);
+  const isFullyEditable = !isProjectedTransaction(transaction) && !isFromCard; // Can open edit dialog
+  const isCategoryEditable = !isProjectedTransaction(transaction); // Can change category only
 
   const handleCategoryChange = async (newCategory: string) => {
-    if (!isEditable) return;
+    if (!isCategoryEditable) return;
 
     setIsUpdating(true);
     try {
@@ -102,6 +117,17 @@ export function EditableTransactionItem({
     }
   };
 
+  // Prepare transaction data for edit dialog
+  const transactionForEdit = {
+    id: transaction.id.split("_projected_")[0],
+    description: transaction.description,
+    amount: transaction.amount,
+    category: transaction.category,
+    transaction_date: transaction.transaction_date,
+    type: (transaction as any).type || "expense",
+    recurrence_id: (transaction as any).recurrence_id || null,
+  };
+
   return (
     <TooltipProvider>
       <div
@@ -109,7 +135,8 @@ export function EditableTransactionItem({
           isProjection
             ? "opacity-70 border-l-2 border-blue-400 dark:border-blue-600"
             : ""
-        }`}
+        } ${isFullyEditable ? "cursor-pointer" : ""}`}
+        onClick={isFullyEditable ? () => setIsEditDialogOpen(true) : undefined}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Category icon */}
@@ -136,6 +163,32 @@ export function EditableTransactionItem({
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Parcela futura - valor estimado</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {/* Card transaction badge */}
+              {isFromCard && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
+                      <CreditCard className="w-3 h-3" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Transação de cartão - edite via upload de fatura</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {/* Recurring badge */}
+              {isRecurring && !isFromCard && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded shrink-0">
+                      <Repeat className="w-3 h-3" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Transação recorrente</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -173,18 +226,19 @@ export function EditableTransactionItem({
           <p className="font-semibold text-foreground">{formattedAmount}</p>
 
           {/* Editable category badge */}
-          {isEditable ? (
+          {isCategoryEditable ? (
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
               <PopoverTrigger asChild>
                 <button
                   className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full transition-all hover:ring-2 hover:ring-primary/30 ${categoryStyle.bg} ${categoryStyle.text}`}
                   disabled={isUpdating}
+                  onClick={(e) => e.stopPropagation()} // Prevent opening edit dialog
                 >
                   {transaction.category || "Não classificado"}
                   <Pencil className="w-3 h-3 opacity-60" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-48 p-2" align="end">
+              <PopoverContent className="w-48 p-2" align="end" onClick={(e) => e.stopPropagation()}>
                 <Select
                   value={transaction.category || "Não classificado"}
                   onValueChange={handleCategoryChange}
@@ -215,6 +269,16 @@ export function EditableTransactionItem({
           )}
         </div>
       </div>
+
+      {/* Edit Transaction Dialog */}
+      {isFullyEditable && (
+        <EditTransactionDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          transaction={transactionForEdit}
+          onSuccess={onCategoryUpdated}
+        />
+      )}
     </TooltipProvider>
   );
 }

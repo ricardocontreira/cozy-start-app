@@ -162,6 +162,7 @@ export type Database = {
           house_id: string
           id: string
           installment: string | null
+          recurrence_id: string | null
           transaction_date: string
           type: string
           updated_at: string
@@ -178,6 +179,7 @@ export type Database = {
           house_id: string
           id?: string
           installment?: string | null
+          recurrence_id?: string | null
           transaction_date: string
           type?: string
           updated_at?: string
@@ -194,6 +196,7 @@ export type Database = {
           house_id?: string
           id?: string
           installment?: string | null
+          recurrence_id?: string | null
           transaction_date?: string
           type?: string
           updated_at?: string

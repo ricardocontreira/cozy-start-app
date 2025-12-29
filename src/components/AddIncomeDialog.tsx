@@ -115,8 +115,9 @@ export function AddIncomeDialog({
           description: `${data.description} foi registrada.`,
         });
       } else {
-        // Recurring income - create multiple transactions
+        // Recurring income - create multiple transactions with recurrence_id
         const totalMonths = data.duration_months || 12;
+        const recurrenceId = crypto.randomUUID();
 
         const transactions = [];
         for (let i = 0; i < totalMonths; i++) {
@@ -133,6 +134,7 @@ export function AddIncomeDialog({
             card_id: null,
             installment: null,
             type: "income",
+            recurrence_id: recurrenceId,
           });
         }
 
