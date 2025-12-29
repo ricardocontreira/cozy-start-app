@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -431,6 +432,9 @@ export default function Cards() {
           </div>
         )}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav activeRoute="cards" />
     </div>
   );
 }

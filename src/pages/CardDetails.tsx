@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Loader2, FileSpreadsheet, LayoutDashboard, CreditCard, Wallet, Settings } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Loader2, FileSpreadsheet } from "lucide-react";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -531,26 +532,7 @@ export default function CardDetails() {
       </Dialog>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/dashboard")}>
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-xs">Início</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1 text-primary" onClick={() => navigate("/cards")}>
-            <CreditCard className="w-5 h-5" />
-            <span className="text-xs">Cartões</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1">
-            <Wallet className="w-5 h-5" />
-            <span className="text-xs">Transações</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/settings")}>
-            <Settings className="w-5 h-5" />
-            <span className="text-xs">Config</span>
-          </Button>
-        </div>
-      </nav>
+      <MobileBottomNav activeRoute="cards" />
     </div>
   );
 }
