@@ -120,9 +120,10 @@ export function AddExpenseDialog({
           description: `${data.description} foi registrada.`,
         });
       } else {
-        // Recurring expense - create multiple transactions
+        // Recurring expense - create multiple transactions with recurrence_id
         const totalMonths = data.duration_months || 12;
         const baseBillingInfo = getBillingMonth(data.transaction_date, closingDay);
+        const recurrenceId = crypto.randomUUID();
 
         const transactions = [];
         for (let i = 0; i < totalMonths; i++) {
@@ -140,6 +141,7 @@ export function AddExpenseDialog({
             card_id: null,
             installment: null,
             type: "expense",
+            recurrence_id: recurrenceId,
           });
         }
 
