@@ -163,6 +163,7 @@ export type Database = {
           id: string
           installment: string | null
           transaction_date: string
+          type: string
           updated_at: string
           upload_id: string | null
         }
@@ -178,6 +179,7 @@ export type Database = {
           id?: string
           installment?: string | null
           transaction_date: string
+          type?: string
           updated_at?: string
           upload_id?: string | null
         }
@@ -193,6 +195,7 @@ export type Database = {
           id?: string
           installment?: string | null
           transaction_date?: string
+          type?: string
           updated_at?: string
           upload_id?: string | null
         }

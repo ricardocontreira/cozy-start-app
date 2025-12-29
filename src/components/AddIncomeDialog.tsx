@@ -1,17 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Loader2, Repeat, Receipt } from "lucide-react";
+import { CalendarIcon, Loader2, Repeat, TrendingUp } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useToast } from "@/hooks/use-toast";
-import { getBillingMonth } from "@/lib/billingUtils";
-import { CATEGORIES } from "@/lib/categories";
+import { INCOME_CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -40,23 +39,21 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const expenseSchema = z.object({
+const incomeSchema = z.object({
   description: z.string().min(2, "Descrição deve ter pelo menos 2 caracteres").max(100, "Máximo 100 caracteres"),
   amount: z.number().positive("Valor deve ser maior que zero"),
   category: z.string().min(1, "Selecione uma categoria"),
   transaction_date: z.date({ required_error: "Selecione uma data" }),
-  card_id: z.string().optional(),
-  expense_type: z.enum(["single", "recurring"]),
+  income_type: z.enum(["single", "recurring"]),
   duration_months: z.number().optional(),
 });
 
-type ExpenseFormData = z.infer<typeof expenseSchema>;
+type IncomeFormData = z.infer<typeof incomeSchema>;
 
-interface AddExpenseDialogProps {
+interface AddIncomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  preselectedCardId?: string;
 }
 
 const DURATION_OPTIONS = [
@@ -66,71 +63,38 @@ const DURATION_OPTIONS = [
   { value: 24, label: "24 meses" },
 ];
 
-export function AddExpenseDialog({
+export function AddIncomeDialog({
   open,
   onOpenChange,
   onSuccess,
-  preselectedCardId,
-}: AddExpenseDialogProps) {
+}: AddIncomeDialogProps) {
   const { user } = useAuth();
   const { currentHouse } = useHouse();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [cards, setCards] = useState<{ id: string; name: string; closing_day: number | null }[]>([]);
 
-  const form = useForm<ExpenseFormData>({
-    resolver: zodResolver(expenseSchema),
+  const form = useForm<IncomeFormData>({
+    resolver: zodResolver(incomeSchema),
     defaultValues: {
       description: "",
       amount: 0,
       category: "",
       transaction_date: new Date(),
-      card_id: preselectedCardId || "",
-      expense_type: "single",
+      income_type: "single",
       duration_months: 12,
     },
   });
 
-  const expenseType = form.watch("expense_type");
-  const selectedCardId = form.watch("card_id");
+  const incomeType = form.watch("income_type");
 
-  // Fetch cards when dialog opens
-  useEffect(() => {
-    if (open && currentHouse?.id) {
-      fetchCards();
-    }
-  }, [open, currentHouse?.id]);
-
-  // Set preselected card when provided
-  useEffect(() => {
-    if (preselectedCardId) {
-      form.setValue("card_id", preselectedCardId);
-    }
-  }, [preselectedCardId, form]);
-
-  const fetchCards = async () => {
-    if (!currentHouse?.id) return;
-    const { data } = await supabase
-      .from("credit_cards")
-      .select("id, name, closing_day")
-      .eq("house_id", currentHouse.id)
-      .order("name");
-    setCards(data || []);
-  };
-
-  const handleSubmit = async (data: ExpenseFormData) => {
+  const handleSubmit = async (data: IncomeFormData) => {
     if (!currentHouse?.id || !user?.id) return;
 
     setSubmitting(true);
 
     try {
-      const selectedCard = cards.find((c) => c.id === data.card_id);
-      const closingDay = selectedCard?.closing_day || 20;
-
-      if (data.expense_type === "single") {
-        // Single expense
-        const billingInfo = getBillingMonth(data.transaction_date, closingDay);
-
+      if (data.income_type === "single") {
+        // Single income
         const { error } = await supabase.from("transactions").insert({
           house_id: currentHouse.id,
           created_by: user.id,
@@ -138,26 +102,24 @@ export function AddExpenseDialog({
           amount: data.amount,
           category: data.category,
           transaction_date: format(data.transaction_date, "yyyy-MM-dd"),
-          billing_month: format(billingInfo.billingMonth, "yyyy-MM-01"),
-          card_id: data.card_id || null,
+          billing_month: format(data.transaction_date, "yyyy-MM-01"),
+          card_id: null,
           installment: null,
-          type: "expense",
+          type: "income",
         });
 
         if (error) throw error;
 
         toast({
-          title: "Despesa adicionada!",
+          title: "Receita adicionada!",
           description: `${data.description} foi registrada.`,
         });
       } else {
-        // Recurring expense - create multiple transactions
+        // Recurring income - create multiple transactions
         const totalMonths = data.duration_months || 12;
-        const baseBillingInfo = getBillingMonth(data.transaction_date, closingDay);
 
         const transactions = [];
         for (let i = 0; i < totalMonths; i++) {
-          const billingMonth = addMonths(baseBillingInfo.billingMonth, i);
           const transactionDate = addMonths(data.transaction_date, i);
 
           transactions.push({
@@ -167,10 +129,10 @@ export function AddExpenseDialog({
             amount: data.amount,
             category: data.category,
             transaction_date: format(transactionDate, "yyyy-MM-dd"),
-            billing_month: format(billingMonth, "yyyy-MM-01"),
-            card_id: data.card_id || null,
+            billing_month: format(transactionDate, "yyyy-MM-01"),
+            card_id: null,
             installment: `${i + 1}/${totalMonths}`,
-            type: "expense",
+            type: "income",
           });
         }
 
@@ -179,7 +141,7 @@ export function AddExpenseDialog({
         if (error) throw error;
 
         toast({
-          title: "Despesa recorrente criada!",
+          title: "Receita recorrente criada!",
           description: `${totalMonths} transações foram registradas para "${data.description}".`,
         });
       }
@@ -203,11 +165,11 @@ export function AddExpenseDialog({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-primary" />
-            Nova Despesa
+            <TrendingUp className="w-5 h-5 text-success" />
+            Nova Receita
           </DialogTitle>
           <DialogDescription>
-            Adicione uma despesa única ou recorrente.
+            Adicione uma receita única ou recorrente.
           </DialogDescription>
         </DialogHeader>
 
@@ -217,7 +179,7 @@ export function AddExpenseDialog({
             <Label htmlFor="description">Descrição</Label>
             <Input
               id="description"
-              placeholder="Ex: Netflix, Aluguel, Mercado..."
+              placeholder="Ex: Salário, Freelance, Aluguel..."
               {...form.register("description")}
             />
             {form.formState.errors.description && (
@@ -256,7 +218,7 @@ export function AddExpenseDialog({
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
+                {INCOME_CATEGORIES.map((cat) => (
                   <SelectItem key={cat.value} value={cat.value}>
                     <span className="flex items-center gap-2">
                       <span>{cat.icon}</span>
@@ -304,44 +266,23 @@ export function AddExpenseDialog({
             </Popover>
           </div>
 
-          {/* Card (optional) */}
-          <div className="space-y-2">
-            <Label>Cartão (opcional)</Label>
-            <Select
-              value={selectedCardId || "none"}
-              onValueChange={(value) => form.setValue("card_id", value === "none" ? "" : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Nenhum cartão" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum cartão</SelectItem>
-                {cards.map((card) => (
-                  <SelectItem key={card.id} value={card.id}>
-                    {card.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Expense Type */}
+          {/* Income Type */}
           <div className="space-y-3">
-            <Label>Tipo de despesa</Label>
+            <Label>Tipo de receita</Label>
             <RadioGroup
-              value={expenseType}
-              onValueChange={(value) => form.setValue("expense_type", value as "single" | "recurring")}
+              value={incomeType}
+              onValueChange={(value) => form.setValue("income_type", value as "single" | "recurring")}
               className="flex gap-4"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="single" id="single" />
-                <Label htmlFor="single" className="font-normal cursor-pointer">
+                <RadioGroupItem value="single" id="income-single" />
+                <Label htmlFor="income-single" className="font-normal cursor-pointer">
                   Única
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="recurring" id="recurring" />
-                <Label htmlFor="recurring" className="font-normal cursor-pointer flex items-center gap-1">
+                <RadioGroupItem value="recurring" id="income-recurring" />
+                <Label htmlFor="income-recurring" className="font-normal cursor-pointer flex items-center gap-1">
                   <Repeat className="w-4 h-4" />
                   Recorrente
                 </Label>
@@ -350,7 +291,7 @@ export function AddExpenseDialog({
           </div>
 
           {/* Duration (only for recurring) */}
-          {expenseType === "recurring" && (
+          {incomeType === "recurring" && (
             <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
               <Label>Duração</Label>
               <Select
@@ -383,7 +324,7 @@ export function AddExpenseDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting} className="bg-success hover:bg-success/90">
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Salvar
             </Button>

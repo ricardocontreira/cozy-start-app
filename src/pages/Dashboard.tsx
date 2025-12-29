@@ -15,7 +15,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PeriodSelector } from "@/components/PeriodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AddExpenseButton } from "@/components/AddExpenseButton";
+import { AddTransactionFab } from "@/components/AddTransactionFab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,11 +26,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Placeholder data for balance and income (to be implemented later)
-const summaryData = {
-  balance: 12450.75,
-  income: 8500.00,
-};
 
 export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -56,7 +51,7 @@ export default function Dashboard() {
     enabled: !!currentHouse?.id,
   });
 
-  // Calculate monthly expenses using billingMonth for accurate projection
+  // Calculate monthly expenses (only type='expense')
   const monthlyExpenses = useMemo(() => {
     if (!transactions.length) return 0;
     
@@ -65,13 +60,33 @@ export default function Dashboard() {
     
     return transactions
       .filter(txn => {
-        // Use billingMonth for filtering (accounts for closing day logic)
         const billingMonth = txn.billingMonth;
-        return billingMonth.getMonth() === selectedMonth && 
+        return txn.type === "expense" &&
+               billingMonth.getMonth() === selectedMonth && 
                billingMonth.getFullYear() === selectedYear;
       })
       .reduce((sum, txn) => sum + Number(txn.amount), 0);
   }, [transactions, selectedDate]);
+
+  // Calculate monthly income (only type='income')
+  const monthlyIncome = useMemo(() => {
+    if (!transactions.length) return 0;
+    
+    const selectedMonth = selectedDate.getMonth();
+    const selectedYear = selectedDate.getFullYear();
+    
+    return transactions
+      .filter(txn => {
+        const billingMonth = txn.billingMonth;
+        return txn.type === "income" &&
+               billingMonth.getMonth() === selectedMonth && 
+               billingMonth.getFullYear() === selectedYear;
+      })
+      .reduce((sum, txn) => sum + Number(txn.amount), 0);
+  }, [transactions, selectedDate]);
+
+  // Calculate balance (income - expenses)
+  const balance = monthlyIncome - monthlyExpenses;
 
   // Format the selected period for display
   const selectedPeriodLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
@@ -261,8 +276,8 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl md:text-3xl font-bold text-foreground">
-                {formatCurrency(summaryData.balance)}
+              <div className={`text-2xl md:text-3xl font-bold ${balance >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {formatCurrency(balance)}
               </div>
               <p className="text-xs text-muted-foreground mt-1 capitalize">
                 {selectedPeriodLabel}
@@ -308,9 +323,13 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl md:text-3xl font-bold text-foreground">
-                {formatCurrency(summaryData.income)}
-              </div>
+              {transactionsLoading ? (
+                <Skeleton className="h-8 w-32" />
+              ) : (
+                <div className="text-2xl md:text-3xl font-bold text-foreground">
+                  {formatCurrency(monthlyIncome)}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-1 capitalize">
                 {selectedPeriodLabel}
               </p>
@@ -383,8 +402,8 @@ export default function Dashboard() {
         </Card>
       </main>
 
-      {/* FAB for adding expense */}
-      <AddExpenseButton variant="fab" />
+      {/* FAB for adding expense/income */}
+      <AddTransactionFab />
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
