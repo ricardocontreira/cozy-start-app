@@ -229,12 +229,12 @@ ${fileContent}`;
       );
     }
 
-    // Buscar transações existentes para evitar duplicatas (billingMonth já calculado acima)
+    // Buscar transações existentes para evitar duplicatas em TODOS os meses
+    // Isso garante que parcelas não sejam duplicadas ao importar faturas de meses diferentes
     const { data: existingTransactions, error: existingError } = await supabaseAdmin
       .from("transactions")
       .select("description, amount, transaction_date")
-      .eq("card_id", cardId)
-      .eq("billing_month", billingMonth);
+      .eq("card_id", cardId);
 
     if (existingError) {
       console.error("Error fetching existing transactions:", existingError);
