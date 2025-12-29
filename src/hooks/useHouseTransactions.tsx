@@ -17,6 +17,7 @@ interface Transaction {
   created_at: string;
   updated_at: string;
   billing_month: string | null;
+  type: "expense" | "income";
 }
 
 interface CreditCard {
@@ -95,7 +96,10 @@ export function useHouseTransactions({ houseId }: UseHouseTransactionsOptions): 
       cardsResult.data?.forEach((card) => map.set(card.id, card));
       setCardsMap(map);
 
-      const transactionsData = transactionsResult.data || [];
+      const transactionsData = (transactionsResult.data || []).map(txn => ({
+        ...txn,
+        type: (txn.type || "expense") as "expense" | "income",
+      }));
       setRawTransactions(transactionsData);
 
       // Calculate summary (based on raw transactions)

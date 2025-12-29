@@ -133,3 +133,91 @@ export function getCategoryChartColors(): Record<string, string> {
     return acc;
   }, {} as Record<string, string>);
 }
+
+// Income categories
+export const INCOME_CATEGORIES: Category[] = [
+  {
+    value: "Salário",
+    label: "Salário",
+    icon: "💰",
+    color: {
+      bg: "bg-green-100 dark:bg-green-900/30",
+      text: "text-green-700 dark:text-green-400",
+      chart: "hsl(142, 76%, 36%)",
+    },
+  },
+  {
+    value: "Freelance",
+    label: "Freelance",
+    icon: "💼",
+    color: {
+      bg: "bg-blue-100 dark:bg-blue-900/30",
+      text: "text-blue-700 dark:text-blue-400",
+      chart: "hsl(217, 91%, 60%)",
+    },
+  },
+  {
+    value: "Investimentos",
+    label: "Investimentos",
+    icon: "📈",
+    color: {
+      bg: "bg-emerald-100 dark:bg-emerald-900/30",
+      text: "text-emerald-700 dark:text-emerald-400",
+      chart: "hsl(160, 84%, 39%)",
+    },
+  },
+  {
+    value: "Aluguel Recebido",
+    label: "Aluguel Recebido",
+    icon: "🏠",
+    color: {
+      bg: "bg-amber-100 dark:bg-amber-900/30",
+      text: "text-amber-700 dark:text-amber-400",
+      chart: "hsl(38, 92%, 50%)",
+    },
+  },
+  {
+    value: "Vendas",
+    label: "Vendas",
+    icon: "🛍️",
+    color: {
+      bg: "bg-purple-100 dark:bg-purple-900/30",
+      text: "text-purple-700 dark:text-purple-400",
+      chart: "hsl(271, 81%, 56%)",
+    },
+  },
+  {
+    value: "Bonificações",
+    label: "Bonificações",
+    icon: "🎁",
+    color: {
+      bg: "bg-pink-100 dark:bg-pink-900/30",
+      text: "text-pink-700 dark:text-pink-400",
+      chart: "hsl(330, 81%, 60%)",
+    },
+  },
+  {
+    value: "Outros",
+    label: "Outros",
+    icon: "💵",
+    color: {
+      bg: "bg-gray-100 dark:bg-gray-800",
+      text: "text-gray-700 dark:text-gray-400",
+      chart: "hsl(215, 16%, 47%)",
+    },
+  },
+];
+
+export function getIncomeCategoryByValue(value: string | null): Category {
+  const cat = INCOME_CATEGORIES.find((c) => c.value === value);
+  return cat || INCOME_CATEGORIES[INCOME_CATEGORIES.length - 1];
+}
+
+export function getIncomeCategoryStyle(category: string | null) {
+  const cat = getIncomeCategoryByValue(category);
+  return {
+    bg: cat.color.bg,
+    text: cat.color.text,
+    icon: cat.icon,
+  };
+}
