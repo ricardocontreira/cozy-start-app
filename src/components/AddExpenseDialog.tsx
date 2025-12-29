@@ -169,7 +169,7 @@ export function AddExpenseDialog({
             transaction_date: format(transactionDate, "yyyy-MM-dd"),
             billing_month: format(billingMonth, "yyyy-MM-01"),
             card_id: data.card_id || null,
-            installment: `${i + 1}/${totalMonths}`,
+            installment: null,
             type: "expense",
           });
         }

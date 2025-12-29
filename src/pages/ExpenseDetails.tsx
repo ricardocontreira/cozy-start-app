@@ -121,6 +121,9 @@ export default function ExpenseDetails() {
     const selectedYear = selectedDate.getFullYear();
 
     return transactions.filter((txn) => {
+      // Only show expenses
+      if (txn.type !== "expense") return false;
+
       // Filter by billing month (not transaction_date)
       const billingMonth = txn.billingMonth;
       if (

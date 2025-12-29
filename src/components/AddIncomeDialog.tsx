@@ -131,7 +131,7 @@ export function AddIncomeDialog({
             transaction_date: format(transactionDate, "yyyy-MM-dd"),
             billing_month: format(transactionDate, "yyyy-MM-01"),
             card_id: null,
-            installment: `${i + 1}/${totalMonths}`,
+            installment: null,
             type: "income",
           });
         }
