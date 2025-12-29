@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditTransactionDialog } from "./EditTransactionDialog";
+import { BatchCategoryUpdateDialog } from "./BatchCategoryUpdateDialog";
 
 interface EditableTransactionItemProps {
   transaction: Transaction | EnrichedTransaction;
@@ -61,6 +62,11 @@ export function EditableTransactionItem({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [batchDialogState, setBatchDialogState] = useState<{
+    open: boolean;
+    newCategory: string;
+    similarCount: number;
+  }>({ open: false, newCategory: "", similarCount: 0 });
   const { toast } = useToast();
 
   const categoryStyle = getCategoryStyle(transaction.category);
@@ -85,10 +91,41 @@ export function EditableTransactionItem({
 
   const handleCategoryChange = async (newCategory: string) => {
     if (!isCategoryEditable) return;
+    if (newCategory === transaction.category) return;
 
+    // Check for similar transactions with the same description
+    const { data: similarTransactions, error: fetchError } = await supabase
+      .from("transactions")
+      .select("id")
+      .eq("description", transaction.description)
+      .neq("id", transaction.id.split("_projected_")[0])
+      .neq("category", newCategory);
+
+    if (fetchError) {
+      console.error("Error checking similar transactions:", fetchError);
+      // Proceed with single update if check fails
+      await updateSingleCategory(newCategory);
+      return;
+    }
+
+    const similarCount = similarTransactions?.length || 0;
+
+    if (similarCount > 0) {
+      // Show batch update dialog
+      setBatchDialogState({
+        open: true,
+        newCategory,
+        similarCount,
+      });
+    } else {
+      // No similar transactions, update directly
+      await updateSingleCategory(newCategory);
+    }
+  };
+
+  const updateSingleCategory = async (newCategory: string) => {
     setIsUpdating(true);
     try {
-      // Get the real transaction ID (without _projected_ suffix)
       const realId = transaction.id.split("_projected_")[0];
 
       const { error } = await supabase
@@ -104,12 +141,46 @@ export function EditableTransactionItem({
       });
 
       setIsPopoverOpen(false);
+      setBatchDialogState({ open: false, newCategory: "", similarCount: 0 });
       onCategoryUpdated?.();
     } catch (error) {
       console.error("Error updating category:", error);
       toast({
         title: "Erro ao atualizar",
         description: "Não foi possível alterar a categoria.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const updateAllSimilarCategories = async () => {
+    setIsUpdating(true);
+    try {
+      const newCategory = batchDialogState.newCategory;
+
+      // Update all transactions with the same description
+      const { error, count } = await supabase
+        .from("transactions")
+        .update({ category: newCategory })
+        .eq("description", transaction.description);
+
+      if (error) throw error;
+
+      toast({
+        title: "Categorias atualizadas",
+        description: `${count || batchDialogState.similarCount + 1} transações de "${transaction.description}" alteradas para "${newCategory}"`,
+      });
+
+      setIsPopoverOpen(false);
+      setBatchDialogState({ open: false, newCategory: "", similarCount: 0 });
+      onCategoryUpdated?.();
+    } catch (error) {
+      console.error("Error updating categories:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível alterar as categorias.",
         variant: "destructive",
       });
     } finally {
@@ -269,6 +340,20 @@ export function EditableTransactionItem({
           )}
         </div>
       </div>
+
+      {/* Batch Category Update Dialog */}
+      <BatchCategoryUpdateDialog
+        open={batchDialogState.open}
+        onOpenChange={(open) =>
+          setBatchDialogState((prev) => ({ ...prev, open }))
+        }
+        description={transaction.description}
+        newCategory={batchDialogState.newCategory}
+        count={batchDialogState.similarCount}
+        onUpdateSingle={() => updateSingleCategory(batchDialogState.newCategory)}
+        onUpdateAll={updateAllSimilarCategories}
+        isUpdating={isUpdating}
+      />
 
       {/* Edit Transaction Dialog */}
       {isFullyEditable && (

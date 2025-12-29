@@ -115,6 +115,57 @@ serve(async (req) => {
 
     const uploadId = uploadLog.id;
 
+    // ============================================
+    // BUSCAR HISTÓRICO DE CATEGORIAS DO USUÁRIO
+    // ============================================
+    console.log("Fetching category history for house:", houseId);
+    
+    const { data: categoryHistory, error: historyError } = await supabaseAdmin
+      .from("transactions")
+      .select("description, category")
+      .eq("house_id", houseId)
+      .neq("category", "Não classificado")
+      .not("category", "is", null);
+
+    if (historyError) {
+      console.error("Error fetching category history:", historyError);
+    }
+
+    // Criar mapa de descrição → categoria mais frequente
+    const categoryMap = new Map<string, string>();
+    
+    if (categoryHistory && categoryHistory.length > 0) {
+      const categoryCounts = new Map<string, Map<string, number>>();
+
+      categoryHistory.forEach((tx) => {
+        const desc = tx.description?.toLowerCase().trim();
+        if (!desc || !tx.category) return;
+        
+        if (!categoryCounts.has(desc)) {
+          categoryCounts.set(desc, new Map());
+        }
+        const descMap = categoryCounts.get(desc)!;
+        descMap.set(tx.category, (descMap.get(tx.category) || 0) + 1);
+      });
+
+      // Pegar a categoria mais frequente para cada descrição
+      categoryCounts.forEach((counts, description) => {
+        let maxCategory = "";
+        let maxCount = 0;
+        counts.forEach((count, category) => {
+          if (count > maxCount) {
+            maxCount = count;
+            maxCategory = category;
+          }
+        });
+        if (maxCategory) {
+          categoryMap.set(description, maxCategory);
+        }
+      });
+
+      console.log(`Built category map with ${categoryMap.size} unique descriptions`);
+    }
+
     // Call Lovable AI (Gemini) to extract transactions
     const prompt = `Você é um assistente financeiro especializado em extrair dados de faturas de cartão de crédito.
 
@@ -280,19 +331,39 @@ ${fileContent}`;
       );
     }
 
-    // Inserir apenas transações novas
-    const transactionsToInsert = newTransactions.map((t: TransactionData) => ({
-      house_id: houseId,
-      card_id: cardId,
-      upload_id: uploadId,
-      description: t.description,
-      amount: Math.abs(t.amount),
-      transaction_date: t.date,
-      billing_month: billingMonth,
-      installment: t.installment || null,
-      category: t.category || "Não classificado",
-      created_by: userId,
-    }));
+    // ============================================
+    // APLICAR CATEGORIAS DO HISTÓRICO
+    // ============================================
+    let categorizedFromHistory = 0;
+    
+    const transactionsToInsert = newTransactions.map((t: TransactionData) => {
+      const descLower = t.description?.toLowerCase().trim();
+      const historicalCategory = descLower ? categoryMap.get(descLower) : null;
+      
+      // Prioridade: 1) Histórico do usuário, 2) IA, 3) Não classificado
+      let finalCategory = t.category || "Não classificado";
+      
+      if (historicalCategory) {
+        finalCategory = historicalCategory;
+        categorizedFromHistory++;
+        console.log(`Using historical category for "${t.description}": ${historicalCategory}`);
+      }
+      
+      return {
+        house_id: houseId,
+        card_id: cardId,
+        upload_id: uploadId,
+        description: t.description,
+        amount: Math.abs(t.amount),
+        transaction_date: t.date,
+        billing_month: billingMonth,
+        installment: t.installment || null,
+        category: finalCategory,
+        created_by: userId,
+      };
+    });
+
+    console.log(`Categorized ${categorizedFromHistory} transactions from history`);
 
     const { error: insertError } = await supabaseAdmin
       .from("transactions")
@@ -316,11 +387,17 @@ ${fileContent}`;
       })
       .eq("id", uploadId);
 
-    console.log(`Successfully processed ${newTransactions.length} transactions, skipped ${skippedCount} duplicates`);
+    console.log(`Successfully processed ${newTransactions.length} transactions, skipped ${skippedCount} duplicates, ${categorizedFromHistory} categorized from history`);
 
-    const message = skippedCount > 0
-      ? `${newTransactions.length} transações importadas. ${skippedCount} já existiam e foram ignoradas.`
-      : `${newTransactions.length} transações importadas com sucesso!`;
+    let message = `${newTransactions.length} transações importadas com sucesso!`;
+    
+    if (categorizedFromHistory > 0) {
+      message += ` ${categorizedFromHistory} categorizadas automaticamente pelo histórico.`;
+    }
+    
+    if (skippedCount > 0) {
+      message += ` ${skippedCount} já existiam e foram ignoradas.`;
+    }
 
     return new Response(
       JSON.stringify({
@@ -328,6 +405,7 @@ ${fileContent}`;
         uploadId,
         itemsCount: newTransactions.length,
         skippedCount,
+        categorizedFromHistory,
         message,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
