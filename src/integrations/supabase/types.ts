@@ -17,9 +17,11 @@ export type Database = {
       credit_cards: {
         Row: {
           brand: Database["public"]["Enums"]["card_brand"]
+          closing_day: number | null
           color: string
           created_at: string
           created_by: string
+          due_day: number | null
           house_id: string
           icon: string | null
           id: string
@@ -29,9 +31,11 @@ export type Database = {
         }
         Insert: {
           brand: Database["public"]["Enums"]["card_brand"]
+          closing_day?: number | null
           color?: string
           created_at?: string
           created_by: string
+          due_day?: number | null
           house_id: string
           icon?: string | null
           id?: string
@@ -41,9 +45,11 @@ export type Database = {
         }
         Update: {
           brand?: Database["public"]["Enums"]["card_brand"]
+          closing_day?: number | null
           color?: string
           created_at?: string
           created_by?: string
+          due_day?: number | null
           house_id?: string
           icon?: string | null
           id?: string
@@ -147,6 +153,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          billing_month: string | null
           card_id: string | null
           category: string | null
           created_at: string
@@ -161,6 +168,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          billing_month?: string | null
           card_id?: string | null
           category?: string | null
           created_at?: string
@@ -175,6 +183,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          billing_month?: string | null
           card_id?: string | null
           category?: string | null
           created_at?: string
