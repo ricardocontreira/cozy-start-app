@@ -85,36 +85,10 @@ serve(async (req) => {
       throw new Error("Only house owners can upload invoices");
     }
 
-    // Buscar closing_day do cartão para calcular billing_month
-    const { data: cardData, error: cardError } = await supabaseAdmin
-      .from("credit_cards")
-      .select("closing_day")
-      .eq("id", cardId)
-      .single();
-
-    if (cardError) {
-      console.error("Error fetching card data:", cardError);
-    }
-
-    const closingDay = cardData?.closing_day ?? 20;
-
-    // Função para calcular billing_month baseado no mês da fatura selecionado
-    // e na regra de fechamento (se a transação cai após closing_day, vai pro mês seguinte)
-    function calculateBillingMonth(transactionDate: string, closingDay: number, invoiceMonth: string): string {
-      const date = new Date(transactionDate);
-      const day = date.getUTCDate();
-      
-      // Parse invoiceMonth (YYYY-MM) para obter ano e mês base
-      const [baseYear, baseMonth] = invoiceMonth.split('-').map(Number);
-
-      if (day > closingDay) {
-        // Após fechamento -> mês seguinte ao invoiceMonth
-        const nextMonth = baseMonth === 12 ? 1 : baseMonth + 1;
-        const nextYear = baseMonth === 12 ? baseYear + 1 : baseYear;
-        return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-      }
-      
-      return `${baseYear}-${String(baseMonth).padStart(2, '0')}-01`;
+    // Função simplificada: usa diretamente o mês da fatura informado pelo usuário
+    function getBillingMonthFromInvoice(invoiceMonth: string): string {
+      const [year, month] = invoiceMonth.split('-').map(Number);
+      return `${year}-${String(month).padStart(2, '0')}-01`;
     }
 
     // Create upload log entry
@@ -259,7 +233,7 @@ ${fileContent}`;
       description: t.description,
       amount: Math.abs(t.amount),
       transaction_date: t.date,
-      billing_month: calculateBillingMonth(t.date, closingDay, invoiceMonth),
+      billing_month: getBillingMonthFromInvoice(invoiceMonth),
       installment: t.installment || null,
       category: t.category || "Não classificado",
       created_by: userId,
