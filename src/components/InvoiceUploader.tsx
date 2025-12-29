@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getNowInBrasilia } from "@/lib/dateUtils";
 import {
   Dialog,
   DialogContent,
@@ -48,13 +49,35 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showMonthDialog, setShowMonthDialog] = useState(false);
   
-  // Default to current month/year
-  const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
-  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
-
+  // Use Brasilia timezone
+  const now = getNowInBrasilia();
   const currentYear = now.getFullYear();
-  const years = [currentYear - 1, currentYear, currentYear + 1].map(String);
+  const currentMonth = now.getMonth() + 1;
+  
+  const [selectedMonth, setSelectedMonth] = useState(String(currentMonth).padStart(2, "0"));
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
+
+  // Only current year and next year (no past years)
+  const years = [currentYear, currentYear + 1].map(String);
+  
+  // Filter available months based on selected year
+  const availableMonths = useMemo(() => {
+    if (parseInt(selectedYear) === currentYear) {
+      // If current year, only show months >= current month
+      return MONTHS.filter(m => parseInt(m.value) >= currentMonth);
+    }
+    // If future year, all months are available
+    return MONTHS;
+  }, [selectedYear, currentYear, currentMonth]);
+
+  // Handle year change and reset month if needed
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    // If switching to current year and selected month is in the past, reset to current month
+    if (parseInt(year) === currentYear && parseInt(selectedMonth) < currentMonth) {
+      setSelectedMonth(String(currentMonth).padStart(2, "0"));
+    }
+  };
 
   const acceptedTypes = [
     "text/csv",
@@ -255,7 +278,7 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
                     <SelectValue placeholder="Mês" />
                   </SelectTrigger>
                   <SelectContent>
-                    {MONTHS.map((month) => (
+                    {availableMonths.map((month) => (
                       <SelectItem key={month.value} value={month.value}>
                         {month.label}
                       </SelectItem>
@@ -266,7 +289,7 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
               
               <div className="space-y-2">
                 <Label htmlFor="year">Ano</Label>
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <Select value={selectedYear} onValueChange={handleYearChange}>
                   <SelectTrigger id="year">
                     <SelectValue placeholder="Ano" />
                   </SelectTrigger>
