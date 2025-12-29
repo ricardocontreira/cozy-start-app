@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LayoutDashboard, LogOut, Copy, Check, Users } from "lucide-react";
 import { format } from "date-fns";
@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
+import { useHouseTransactions } from "@/hooks/useHouseTransactions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -22,20 +23,36 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Dummy data for charts and summaries
+// Placeholder data for balance and income (to be implemented later)
 const summaryData = {
   balance: 12450.75,
-  expenses: 3280.50,
   income: 8500.00,
 };
 
 export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
   const { currentHouse, memberRole, houses, selectHouse, loading: houseLoading } = useHouse();
+  const { transactions, isLoading: transactionsLoading } = useHouseTransactions({ houseId: currentHouse?.id });
   const navigate = useNavigate();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Calculate monthly expenses using useMemo for performance
+  const monthlyExpenses = useMemo(() => {
+    if (!transactions.length) return 0;
+    
+    const selectedMonth = selectedDate.getMonth();
+    const selectedYear = selectedDate.getFullYear();
+    
+    return transactions
+      .filter(txn => {
+        const txnDate = new Date(txn.transaction_date);
+        return txnDate.getMonth() === selectedMonth && 
+               txnDate.getFullYear() === selectedYear;
+      })
+      .reduce((sum, txn) => sum + Number(txn.amount), 0);
+  }, [transactions, selectedDate]);
 
   // Format the selected period for display
   const selectedPeriodLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
@@ -245,9 +262,13 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl md:text-3xl font-bold text-foreground">
-                {formatCurrency(summaryData.expenses)}
-              </div>
+              {transactionsLoading ? (
+                <Skeleton className="h-8 w-32" />
+              ) : (
+                <div className="text-2xl md:text-3xl font-bold text-foreground">
+                  {formatCurrency(monthlyExpenses)}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-1 capitalize">
                 {selectedPeriodLabel}
               </p>
