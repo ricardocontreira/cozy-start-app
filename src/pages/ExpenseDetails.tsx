@@ -31,7 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodSelector } from "@/components/PeriodSelector";
-import { TransactionItem } from "@/components/TransactionItem";
+import { EditableTransactionItem } from "@/components/EditableTransactionItem";
 import {
   Select,
   SelectContent,
@@ -91,7 +91,7 @@ export default function ExpenseDetails() {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { transactions, isLoading: transactionsLoading } = useHouseTransactions({
+  const { transactions, isLoading: transactionsLoading, refetch } = useHouseTransactions({
     houseId: currentHouse?.id,
   });
 
@@ -507,7 +507,11 @@ export default function ExpenseDetails() {
           ) : (
             <div className="divide-y divide-border rounded-lg border bg-card">
               {filteredTransactions.map((transaction) => (
-                <TransactionItem key={transaction.id} transaction={transaction} />
+                <EditableTransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  onCategoryUpdated={refetch}
+                />
               ))}
             </div>
           )}

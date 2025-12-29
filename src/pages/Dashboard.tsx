@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LayoutDashboard, LogOut, Copy, Check, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LayoutDashboard, LogOut, Copy, Check, Users, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useHouseTransactions } from "@/hooks/useHouseTransactions";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -37,6 +39,21 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Fetch credit cards for the current house
+  const { data: creditCards = [], isLoading: cardsLoading } = useQuery({
+    queryKey: ["house-cards", currentHouse?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("credit_cards")
+        .select("id, name, brand, color, last_digits")
+        .eq("house_id", currentHouse?.id!)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentHouse?.id,
+  });
 
   // Calculate monthly expenses using billingMonth for accurate projection
   const monthlyExpenses = useMemo(() => {
@@ -318,17 +335,49 @@ export default function Dashboard() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhum cartão cadastrado ainda.</p>
-              <Button 
-                variant="link" 
-                className="mt-2 text-primary"
-                onClick={() => navigate("/cards")}
-              >
-                Adicionar primeiro cartão
-              </Button>
-            </div>
+            {cardsLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+              </div>
+            ) : creditCards.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum cartão cadastrado ainda.</p>
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-primary"
+                  onClick={() => navigate("/cards")}
+                >
+                  Adicionar primeiro cartão
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {creditCards.map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => navigate(`/cards/${card.id}`)}
+                    className="flex items-center gap-3 p-4 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
+                    style={{ borderLeftColor: card.color, borderLeftWidth: 4 }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${card.color}20` }}
+                    >
+                      <CreditCard className="w-5 h-5" style={{ color: card.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">{card.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        •••• {card.last_digits}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
