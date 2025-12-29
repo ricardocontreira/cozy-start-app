@@ -228,7 +228,7 @@ export default function Dashboard() {
                       Código: {currentHouse.invite_code}
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem className="gap-2">
+                  <DropdownMenuItem onClick={() => navigate("/settings")} className="gap-2">
                     <Settings className="w-4 h-4" />
                     Configurações
                   </DropdownMenuItem>
@@ -428,7 +428,12 @@ export default function Dashboard() {
             <Wallet className="w-5 h-5" />
             <span className="text-xs">Transações</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-col h-auto py-2 gap-1"
+            onClick={() => navigate("/settings")}
+          >
             <Settings className="w-5 h-5" />
             <span className="text-xs">Config</span>
           </Button>
