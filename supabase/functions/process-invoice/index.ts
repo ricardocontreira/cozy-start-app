@@ -64,13 +64,18 @@ serve(async (req) => {
 
     const userId = userData.user.id;
 
-    const { fileContent, filename, cardId, houseId } = await req.json();
+    const { fileContent, filename, cardId, houseId, invoiceMonth } = await req.json();
 
     if (!fileContent || !filename || !cardId || !houseId) {
       throw new Error("Missing required fields: fileContent, filename, cardId, houseId");
     }
 
-    console.log(`Processing invoice: ${filename} for card ${cardId}`);
+    // Validate invoiceMonth (required, format YYYY-MM)
+    if (!invoiceMonth || !/^\d{4}-\d{2}$/.test(invoiceMonth)) {
+      throw new Error("invoiceMonth é obrigatório (formato: YYYY-MM)");
+    }
+
+    console.log(`Processing invoice: ${filename} for card ${cardId}, invoice month: ${invoiceMonth}`);
 
     // Verify user is owner of the house
     const { data: roleData, error: roleError } = await supabaseAdmin
@@ -93,21 +98,23 @@ serve(async (req) => {
 
     const closingDay = cardData?.closing_day ?? 20;
 
-    // Função auxiliar para calcular billing_month baseado na data e fechamento
-    function calculateBillingMonth(transactionDate: string, closingDay: number): string {
+    // Função para calcular billing_month baseado no mês da fatura selecionado
+    // e na regra de fechamento (se a transação cai após closing_day, vai pro mês seguinte)
+    function calculateBillingMonth(transactionDate: string, closingDay: number, invoiceMonth: string): string {
       const date = new Date(transactionDate);
       const day = date.getUTCDate();
-      const month = date.getUTCMonth();
-      const year = date.getUTCFullYear();
+      
+      // Parse invoiceMonth (YYYY-MM) para obter ano e mês base
+      const [baseYear, baseMonth] = invoiceMonth.split('-').map(Number);
 
       if (day > closingDay) {
-        // Após fechamento -> mês seguinte
-        const nextMonth = month === 11 ? 0 : month + 1;
-        const nextYear = month === 11 ? year + 1 : year;
-        return `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+        // Após fechamento -> mês seguinte ao invoiceMonth
+        const nextMonth = baseMonth === 12 ? 1 : baseMonth + 1;
+        const nextYear = baseMonth === 12 ? baseYear + 1 : baseYear;
+        return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
       }
       
-      return `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      return `${baseYear}-${String(baseMonth).padStart(2, '0')}-01`;
     }
 
     // Create upload log entry
@@ -252,7 +259,7 @@ ${fileContent}`;
       description: t.description,
       amount: Math.abs(t.amount),
       transaction_date: t.date,
-      billing_month: calculateBillingMonth(t.date, closingDay),
+      billing_month: calculateBillingMonth(t.date, closingDay, invoiceMonth),
       installment: t.installment || null,
       category: t.category || "Não classificado",
       created_by: userId,
