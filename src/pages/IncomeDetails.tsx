@@ -12,6 +12,10 @@ import {
   Tag,
   Receipt,
   Plus,
+  LayoutDashboard,
+  CreditCard,
+  Wallet,
+  Settings,
 } from "lucide-react";
 import {
   PieChart,
@@ -209,20 +213,20 @@ export default function IncomeDetails() {
     return null;
   };
 
-  // Custom legend
+  // Custom legend - more compact for mobile
   const CustomLegend = ({ payload }: any) => {
     return (
-      <div className="flex flex-wrap gap-2 justify-center mt-4">
+      <div className="flex flex-wrap gap-1.5 justify-center mt-2 px-2">
         {payload?.map((entry: any, index: number) => (
           <div
             key={index}
-            className="flex items-center gap-1.5 text-xs px-2 py-1 bg-muted/50 rounded-md"
+            className="flex items-center gap-1 text-[10px] md:text-xs px-1.5 py-0.5 bg-muted/50 rounded"
           >
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-foreground">{entry.value}</span>
+            <span className="text-foreground truncate max-w-[80px]">{entry.value}</span>
           </div>
         ))}
       </div>
@@ -245,7 +249,7 @@ export default function IncomeDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-6">
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 py-3 md:px-6 md:py-4">
@@ -297,7 +301,7 @@ export default function IncomeDetails() {
                   <p className="text-sm capitalize">{selectedPeriodLabel}</p>
                 </div>
               ) : (
-                <div className="h-64">
+                <div className="h-72 md:h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -305,9 +309,9 @@ export default function IncomeDetails() {
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
+                        cy="40%"
+                        innerRadius={45}
+                        outerRadius={70}
                         paddingAngle={2}
                       >
                         {categoryData.map((entry, index) => (
@@ -315,7 +319,7 @@ export default function IncomeDetails() {
                         ))}
                       </Pie>
                       <Tooltip content={<CustomTooltip />} />
-                      <Legend content={<CustomLegend />} />
+                      <Legend content={<CustomLegend />} wrapperStyle={{ paddingTop: '10px' }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -485,12 +489,34 @@ export default function IncomeDetails() {
       {/* FAB for adding income */}
       <Button
         size="lg"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-success hover:bg-success/90 text-success-foreground"
+        className="fixed bottom-20 md:bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-success hover:bg-success/90 text-success-foreground z-40"
         onClick={() => setDialogOpen(true)}
       >
         <Plus className="w-6 h-6" />
         <span className="sr-only">Adicionar Receita</span>
       </Button>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
+        <div className="flex items-center justify-around py-2">
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/dashboard")}>
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-xs">Início</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/cards")}>
+            <CreditCard className="w-5 h-5" />
+            <span className="text-xs">Cartões</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1 text-primary">
+            <Wallet className="w-5 h-5" />
+            <span className="text-xs">Transações</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => navigate("/settings")}>
+            <Settings className="w-5 h-5" />
+            <span className="text-xs">Config</span>
+          </Button>
+        </div>
+      </nav>
 
       <AddIncomeDialog
         open={dialogOpen}
