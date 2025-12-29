@@ -80,7 +80,8 @@ export function generateInstallmentProjections(
     created_at: string;
     updated_at: string;
   },
-  closingDay: number
+  closingDay: number,
+  referenceDate: Date = new Date()
 ): ProjectedTransaction[] {
   // 1. Validação inicial - campo vazio ou nulo
   if (!transaction.installment || transaction.installment.trim() === "") {
@@ -124,18 +125,8 @@ export function generateInstallmentProjections(
   const projections: ProjectedTransaction[] = [];
   const baseBilling = getBillingMonth(new Date(transaction.transaction_date), closingDay);
 
-  // 6. Log de debug para acompanhar o fluxo
-  console.log(
-    `[Billing] ${transaction.description}: Parcela ${currentInstallment}/${totalInstallments} ` +
-    `| Base: ${format(baseBilling.billingMonth, "MMM/yyyy", { locale: ptBR })} ` +
-    `| Gerando ${totalInstallments - currentInstallment} projeções`
-  );
-
-  // 7. Loop: gera parcelas de (X+1) até Y
-  //    Exemplo: 05/10 -> gera 06/10, 07/10, 08/10, 09/10, 10/10
+  // 6. Loop: gera parcelas de (X+1) até Y
   for (let i = currentInstallment + 1; i <= totalInstallments; i++) {
-    // monthsAhead: quantos meses à frente da parcela original
-    // Para i=6 (quando X=5): monthsAhead = 6-5 = 1 mês à frente
     const monthsAhead = i - currentInstallment;
     const projectedBillingMonth = addMonths(baseBilling.billingMonth, monthsAhead);
 
@@ -150,5 +141,15 @@ export function generateInstallmentProjections(
     });
   }
 
-  return projections;
+  // 7. Filtrar projeções passadas (manter apenas >= mês atual)
+  const currentMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+  const filteredProjections = projections.filter(proj => proj.billingMonth >= currentMonth);
+
+  console.log(
+    `[Billing] ${transaction.description}: ${currentInstallment}/${totalInstallments} ` +
+    `| Base: ${format(baseBilling.billingMonth, "MMM/yyyy", { locale: ptBR })} ` +
+    `| Geradas: ${projections.length} | Após filtro (>= ${format(currentMonth, "MMM/yyyy", { locale: ptBR })}): ${filteredProjections.length}`
+  );
+
+  return filteredProjections;
 }
