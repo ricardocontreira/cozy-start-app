@@ -14,6 +14,7 @@ import Cards from "./pages/Cards";
 import CardDetails from "./pages/CardDetails";
 import ExpenseDetails from "./pages/ExpenseDetails";
 import IncomeDetails from "./pages/IncomeDetails";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/cards/:cardId" element={<CardDetails />} />
               <Route path="/expense-details" element={<ExpenseDetails />} />
               <Route path="/income-details" element={<IncomeDetails />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -310,6 +310,10 @@ export type Database = {
         Returns: boolean
       }
       join_house_by_code: { Args: { code: string }; Returns: string }
+      regenerate_invite_code: {
+        Args: { house_id_param: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "owner" | "viewer"

@@ -142,6 +142,91 @@ export function useHouse() {
     }
   };
 
+  const updateHouseName = async (name: string) => {
+    if (!currentHouse || !user) return { error: new Error("Casa não selecionada") };
+
+    try {
+      const { error } = await supabase
+        .from("houses")
+        .update({ name, updated_at: new Date().toISOString() })
+        .eq("id", currentHouse.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setCurrentHouse({ ...currentHouse, name });
+      setHouses(houses.map(h => h.id === currentHouse.id ? { ...h, name } : h));
+
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar casa",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  const regenerateInviteCode = async () => {
+    if (!currentHouse || !user) return { error: new Error("Casa não selecionada") };
+
+    try {
+      const { data, error } = await supabase.rpc("regenerate_invite_code", {
+        house_id_param: currentHouse.id,
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setCurrentHouse({ ...currentHouse, invite_code: data });
+      setHouses(houses.map(h => h.id === currentHouse.id ? { ...h, invite_code: data } : h));
+
+      return { error: null, newCode: data };
+    } catch (error: any) {
+      toast({
+        title: "Erro ao regenerar código",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  const leaveHouse = async () => {
+    if (!currentHouse || !user) return { error: new Error("Casa não selecionada") };
+
+    try {
+      const { error } = await supabase
+        .from("house_members")
+        .delete()
+        .eq("house_id", currentHouse.id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Remove house from local state
+      const updatedHouses = houses.filter(h => h.id !== currentHouse.id);
+      setHouses(updatedHouses);
+      
+      if (updatedHouses.length > 0) {
+        setCurrentHouse(updatedHouses[0]);
+      } else {
+        setCurrentHouse(null);
+        setMemberRole(null);
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erro ao sair da casa",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
   return {
     houses,
     currentHouse,
@@ -151,5 +236,8 @@ export function useHouse() {
     joinHouse,
     selectHouse,
     refreshHouses: fetchHouses,
+    updateHouseName,
+    regenerateInviteCode,
+    leaveHouse,
   };
 }
