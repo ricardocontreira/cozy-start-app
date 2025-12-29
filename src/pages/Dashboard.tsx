@@ -15,6 +15,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PeriodSelector } from "@/components/PeriodSelector";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddExpenseButton } from "@/components/AddExpenseButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -381,6 +382,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* FAB for adding expense */}
+      <AddExpenseButton variant="fab" />
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">

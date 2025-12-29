@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodSelector } from "@/components/PeriodSelector";
 import { EditableTransactionItem } from "@/components/EditableTransactionItem";
+import { AddExpenseButton } from "@/components/AddExpenseButton";
 import {
   Select,
   SelectContent,
@@ -517,6 +518,9 @@ export default function ExpenseDetails() {
           )}
         </div>
       </main>
+
+      {/* FAB for adding expense */}
+      <AddExpenseButton variant="fab" onSuccess={refetch} />
     </div>
   );
 }
