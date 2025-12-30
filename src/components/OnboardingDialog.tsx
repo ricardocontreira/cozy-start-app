@@ -109,7 +109,7 @@ export function OnboardingDialog({ onComplete }: OnboardingDialogProps) {
           </DialogDescription>
         </div>
 
-        <Carousel setApi={setApi} className="w-full">
+        <Carousel setApi={setApi} className="w-full" opts={{ align: "center" }}>
           <CarouselContent>
             {slides.map((slide, index) => (
               <CarouselItem key={index}>
