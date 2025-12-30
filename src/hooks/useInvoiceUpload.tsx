@@ -71,15 +71,28 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     fetchUploadHistory();
   }, [fetchUploadHistory]);
 
-  const parseFileContent = async (file: File): Promise<string> => {
+  const parseFileContent = async (file: File): Promise<{ content: string; fileType: "pdf" | "text" }> => {
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const content = e.target?.result as string;
-        resolve(content);
+        if (isPdf) {
+          // Para PDF, extrai o base64 do data URL
+          const dataUrl = e.target?.result as string;
+          const base64 = dataUrl.split(",")[1];
+          resolve({ content: base64, fileType: "pdf" });
+        } else {
+          resolve({ content: e.target?.result as string, fileType: "text" });
+        }
       };
       reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsText(file);
+      
+      if (isPdf) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
     });
   };
 
@@ -106,11 +119,12 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     setIsUploading(true);
 
     try {
-      const fileContent = await parseFileContent(file);
+      const { content, fileType } = await parseFileContent(file);
 
       const { data, error } = await supabase.functions.invoke("process-invoice", {
         body: {
-          fileContent,
+          fileContent: content,
+          fileType,
           filename: file.name,
           cardId,
           houseId,
