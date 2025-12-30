@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle, Calendar } from "lucide-react";
+import { Upload, FileSpreadsheet, FileText, Loader2, CheckCircle, AlertCircle, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNowInBrasilia } from "@/lib/dateUtils";
 import {
@@ -83,9 +83,10 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
     "text/csv",
     "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/pdf",
   ];
 
-  const acceptedExtensions = [".csv", ".xls", ".xlsx"];
+  const acceptedExtensions = [".csv", ".xls", ".xlsx", ".pdf"];
 
   const isValidFile = (file: File): boolean => {
     const extension = "." + file.name.split(".").pop()?.toLowerCase();
@@ -243,14 +244,14 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
             </p>
             {uploadState === "idle" && (
               <p className="mt-1 text-xs text-muted-foreground">
-                CSV ou Excel (máx. 5MB)
+                PDF, CSV ou Excel (máx. 5MB)
               </p>
             )}
           </div>
           <input
             type="file"
             className="hidden"
-            accept=".csv,.xls,.xlsx"
+            accept=".csv,.xls,.xlsx,.pdf"
             onChange={handleInputChange}
             disabled={disabled || isUploading}
           />
@@ -306,7 +307,11 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
             
             {pendingFile && (
               <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+                {pendingFile.name.toLowerCase().endsWith(".pdf") ? (
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+                )}
                 <span className="text-sm text-muted-foreground truncate">
                   {pendingFile.name}
                 </span>

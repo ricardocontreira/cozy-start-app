@@ -64,18 +64,20 @@ serve(async (req) => {
 
     const userId = userData.user.id;
 
-    const { fileContent, filename, cardId, houseId, invoiceMonth } = await req.json();
+    const { fileContent, fileType, filename, cardId, houseId, invoiceMonth } = await req.json();
 
     if (!fileContent || !filename || !cardId || !houseId) {
       throw new Error("Missing required fields: fileContent, filename, cardId, houseId");
     }
+
+    const isPdf = fileType === "pdf";
 
     // Validate invoiceMonth (required, format YYYY-MM)
     if (!invoiceMonth || !/^\d{4}-\d{2}$/.test(invoiceMonth)) {
       throw new Error("invoiceMonth é obrigatório (formato: YYYY-MM)");
     }
 
-    console.log(`Processing invoice: ${filename} for card ${cardId}, invoice month: ${invoiceMonth}`);
+    console.log(`Processing invoice: ${filename} (type: ${isPdf ? "PDF" : "text"}) for card ${cardId}, invoice month: ${invoiceMonth}`);
 
     // Verify user is owner of the house
     const { data: roleData, error: roleError } = await supabaseAdmin
@@ -188,10 +190,21 @@ REGRAS IMPORTANTES:
 - Valores devem ser números positivos (decimal com ponto)
 - Datas no formato ISO (YYYY-MM-DD)
 - Se a data não estiver clara, use a data mais provável baseada no contexto
-- Ignore linhas que não são transações (totais, cabeçalhos, etc.)
+- Ignore linhas que não são transações (totais, cabeçalhos, etc.)`;
 
-CONTEÚDO DA FATURA:
-${fileContent}`;
+    // Construir mensagens baseado no tipo de arquivo
+    const userContent = isPdf
+      ? [
+          {
+            type: "file",
+            file: {
+              filename: filename,
+              file_data: `data:application/pdf;base64,${fileContent}`,
+            },
+          },
+          { type: "text", text: prompt },
+        ]
+      : prompt + `\n\nCONTEÚDO DA FATURA:\n${fileContent}`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -206,7 +219,7 @@ ${fileContent}`;
             role: "system",
             content: "You are a financial assistant that extracts transaction data from credit card invoices. Always respond with valid JSON only.",
           },
-          { role: "user", content: prompt },
+          { role: "user", content: userContent },
         ],
       }),
     });
