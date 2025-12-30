@@ -113,16 +113,16 @@ export function OnboardingDialog({ onComplete }: OnboardingDialogProps) {
           <CarouselContent>
             {slides.map((slide, index) => (
               <CarouselItem key={index}>
-                <div className="flex flex-col items-center text-center p-8 pt-10">
+                <div className="flex flex-col items-center text-center p-6 sm:p-10 min-h-[280px] sm:min-h-[350px] justify-center">
                   <div
-                    className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 ${slide.iconBg}`}
+                    className={w-16 h-16 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 transition-all ${slide.iconBg}`}
                   >
                     {slide.icon}
                   </div>
-                  <h2 className="text-xl font-bold text-foreground mb-3">
+                  <h2 className="text-lg sm:text-2xl font-bold text-foreground mb-2 sm:mb-3 leading-tight">
                     {slide.title}
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed text-sm max-w-xs">
+                  <p className="text-muted-foreground leading-relaxed text-xs sm:text-base max-w-[280px] sm:max-w-sm px-2">
                     {slide.description}
                   </p>
                 </div>
