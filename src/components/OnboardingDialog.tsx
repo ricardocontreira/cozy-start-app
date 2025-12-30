@@ -1,17 +1,7 @@
 import { useState, useEffect } from "react";
 import { Home, CreditCard, Sparkles, Brain, ChevronRight, ChevronLeft } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from "@/components/ui/carousel";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 
 const ONBOARDING_KEY = "finlar_has_seen_onboarding";
@@ -27,8 +17,7 @@ const slides: OnboardingSlide[] = [
   {
     icon: <Sparkles className="w-8 h-8" />,
     title: "Bem-vindo ao FinLar!",
-    description:
-      "Sua gestão financeira residencial começa aqui. Vamos organizar o lar juntos?",
+    description: "Sua gestão financeira residencial começa aqui. Vamos organizar o lar juntos?",
     iconBg: "bg-primary/20 text-primary",
   },
   {
@@ -104,9 +93,7 @@ export function OnboardingDialog({ onComplete }: OnboardingDialogProps) {
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
         <div className="sr-only">
           <DialogTitle>Bem-vindo ao FinLar</DialogTitle>
-          <DialogDescription>
-            Tutorial de introdução ao aplicativo
-          </DialogDescription>
+          <DialogDescription>Tutorial de introdução ao aplicativo</DialogDescription>
         </div>
 
         <Carousel setApi={setApi} className="w-full" opts={{ align: "center" }}>
@@ -115,7 +102,7 @@ export function OnboardingDialog({ onComplete }: OnboardingDialogProps) {
               <CarouselItem key={index}>
                 <div className="flex flex-col items-center text-center p-6 sm:p-10 min-h-[280px] sm:min-h-[350px] justify-center">
                   <div
-                    className={w-16 h-16 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 transition-all ${slide.iconBg}`}
+                    className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 transition-all ${slide.iconBg}`}
                   >
                     {slide.icon}
                   </div>
@@ -138,9 +125,7 @@ export function OnboardingDialog({ onComplete }: OnboardingDialogProps) {
               key={index}
               onClick={() => api?.scrollTo(index)}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === current
-                  ? "bg-primary w-6"
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                index === current ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
               aria-label={`Ir para slide ${index + 1}`}
             />
@@ -149,23 +134,12 @@ export function OnboardingDialog({ onComplete }: OnboardingDialogProps) {
 
         {/* Navigation buttons */}
         <div className="flex items-center justify-between p-4 pt-2 border-t border-border">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handlePrevious}
-            disabled={current === 0}
-            className="gap-1"
-          >
+          <Button variant="ghost" size="sm" onClick={handlePrevious} disabled={current === 0} className="gap-1">
             <ChevronLeft className="w-4 h-4" />
             Anterior
           </Button>
 
-          <Button
-            variant={isLastSlide ? "default" : "ghost"}
-            size="sm"
-            onClick={handleNext}
-            className="gap-1"
-          >
+          <Button variant={isLastSlide ? "default" : "ghost"} size="sm" onClick={handleNext} className="gap-1">
             {isLastSlide ? (
               "Começar agora"
             ) : (
