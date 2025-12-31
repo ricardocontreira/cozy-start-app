@@ -107,6 +107,7 @@ export default function CardDetails() {
     isLoading: historyLoading,
     uploadInvoice,
     undoUpload,
+    refreshHistory,
   } = useInvoiceUpload({ 
     cardId: cardId || "", 
     houseId: currentHouse?.id || "" 
@@ -381,6 +382,8 @@ export default function CardDetails() {
               isLoading={historyLoading}
               onUndo={undoUpload}
               isOwner={isOwner}
+              houseId={currentHouse?.id || ""}
+              onRefresh={refreshHistory}
             />
           </TabsContent>
         </Tabs>
