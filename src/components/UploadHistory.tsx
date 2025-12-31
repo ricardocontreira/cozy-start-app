@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Clock, FileSpreadsheet, Undo2, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Clock, FileSpreadsheet, Undo2, CheckCircle, AlertCircle, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,16 +17,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadLog } from "@/hooks/useInvoiceUpload";
+import { UploadTransactionsSheet } from "@/components/UploadTransactionsSheet";
 
 interface UploadHistoryProps {
   history: UploadLog[];
   isLoading: boolean;
   onUndo: (uploadId: string) => Promise<boolean>;
   isOwner: boolean;
+  houseId: string;
+  onRefresh?: () => void;
 }
 
-export function UploadHistory({ history, isLoading, onUndo, isOwner }: UploadHistoryProps) {
+export function UploadHistory({ history, isLoading, onUndo, isOwner, houseId, onRefresh }: UploadHistoryProps) {
   const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [selectedUpload, setSelectedUpload] = useState<UploadLog | null>(null);
 
   const handleUndo = async (uploadId: string) => {
     setUndoingId(uploadId);
@@ -110,7 +114,10 @@ export function UploadHistory({ history, isLoading, onUndo, isOwner }: UploadHis
         {history.map((log) => (
           <div
             key={log.id}
-            className="flex items-center justify-between p-3 rounded-lg border bg-card"
+            className={`flex items-center justify-between p-3 rounded-lg border bg-card transition-colors ${
+              log.status === "completed" ? "cursor-pointer hover:border-primary/50" : ""
+            }`}
+            onClick={() => log.status === "completed" && setSelectedUpload(log)}
           >
             <div className="flex items-start gap-3 min-w-0 flex-1">
               <FileSpreadsheet className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -148,6 +155,7 @@ export function UploadHistory({ history, isLoading, onUndo, isOwner }: UploadHis
                       size="sm"
                       className="text-muted-foreground hover:text-destructive"
                       disabled={undoingId === log.id}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {undoingId === log.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -156,7 +164,7 @@ export function UploadHistory({ history, isLoading, onUndo, isOwner }: UploadHis
                       )}
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Desfazer Upload</AlertDialogTitle>
                       <AlertDialogDescription>
@@ -176,10 +184,22 @@ export function UploadHistory({ history, isLoading, onUndo, isOwner }: UploadHis
                   </AlertDialogContent>
                 </AlertDialog>
               )}
+              {log.status === "completed" && (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      <UploadTransactionsSheet
+        upload={selectedUpload}
+        isOpen={!!selectedUpload}
+        onClose={() => setSelectedUpload(null)}
+        isOwner={isOwner}
+        houseId={houseId}
+        onTransactionDeleted={onRefresh}
+      />
     </div>
   );
 }
