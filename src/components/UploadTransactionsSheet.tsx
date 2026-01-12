@@ -133,50 +133,48 @@ function TransactionItem({
       <div className="flex items-start gap-2">
         <span className="text-lg flex-shrink-0">{categoryStyle.icon}</span>
         <div className="min-w-0 flex-1">
+          {/* Linha 1: Descrição + Lixeira */}
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium line-clamp-2 flex-1">{transaction.description}</p>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="text-sm font-semibold text-destructive whitespace-nowrap">
-                {formatCurrency(transaction.amount)}
-              </span>
-              {isOwner && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
-                      disabled={isDeleting}
+            {isOwner && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remover transação?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      A transação "{transaction.description}" será permanentemente removida.
+                      Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {isDeleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Remover transação?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        A transação "{transaction.description}" será permanentemente removida.
-                        Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={onDelete}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Remover
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
+                      Remover
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
+
+          {/* Linha 2: Data + Parcelamento + Categoria */}
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
             <span className="text-xs text-muted-foreground">
               {format(new Date(transaction.transaction_date + "T00:00:00"), "dd/MM/yyyy")}
@@ -192,6 +190,13 @@ function TransactionItem({
             >
               {transaction.category || "Não classificado"}
             </Badge>
+          </div>
+
+          {/* Linha 3: Valor (separado, alinhado à direita) */}
+          <div className="flex justify-end mt-2">
+            <span className="text-sm font-semibold text-destructive">
+              {formatCurrency(transaction.amount)}
+            </span>
           </div>
         </div>
       </div>
