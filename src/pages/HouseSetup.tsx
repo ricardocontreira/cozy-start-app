@@ -67,7 +67,7 @@ export default function HouseSetup() {
       <OnboardingDialog />
       <header className="flex items-center justify-between p-4 md:p-6">
         <div className="flex items-center gap-2">
-          <img src={finlarLogo} alt="FinLar" className="h-10" />
+          <img src={finlarLogo} alt="FinLar" className="h-12 w-auto" />
         </div>
         <ThemeToggle />
       </header>
