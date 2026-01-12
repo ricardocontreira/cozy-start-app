@@ -11,13 +11,13 @@ const aiFeatures = [
     icon: Upload,
     title: "Importação com IA",
     description:
-      "Upload de faturas que identifica gastos automaticamente. Suporte a pdf, CSV e Excel das principais operadoras de cartão.",
+      "Upload de faturas que identifica gastos automaticamente. Suporte a PDF, CSV e Excel das principais operadoras de cartão.",
   },
   {
     icon: Brain,
     title: "Categorização Automática",
     description:
-      "Ao subir faturas (CSV/Excel), a IA Gemini identifica nomes, valores e datas, atribuindo categorias instantaneamente.",
+      "Ao subir faturas (PDF, CSV e Excel), a IA Gemini identifica nomes, valores e datas, atribuindo categorias instantaneamente.",
   },
   {
     icon: Sparkles,
