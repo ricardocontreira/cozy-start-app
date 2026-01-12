@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Users, Loader2, ArrowRight } from "lucide-react";
-import finlarLogo from "@/assets/finlar-logo.png";
+import { FinLarLogo } from "@/components/FinLarLogo";
 
 import { useHouse } from "@/hooks/useHouse";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ export default function HouseSetup() {
       <OnboardingDialog />
       <header className="flex items-center justify-between p-4 md:p-6">
         <div className="flex items-center gap-2">
-          <img src={finlarLogo} alt="FinLar" className="h-12 w-auto" />
+          <FinLarLogo size="lg" />
         </div>
         <ThemeToggle />
       </header>

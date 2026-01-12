@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import finlarLogo from "@/assets/finlar-logo.png";
+import { FinLarLogo } from "@/components/FinLarLogo";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,7 @@ export default function Auth() {
       {/* Header */}
       <header className="flex items-center justify-between p-4 md:p-6">
         <Link to="/" className="flex items-center gap-2">
-          <img src={finlarLogo} alt="FinLar" className="h-12 w-auto" />
+          <FinLarLogo size="lg" />
         </Link>
         <ThemeToggle />
       </header>
