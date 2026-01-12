@@ -17,7 +17,7 @@ const aiFeatures = [
     icon: Brain,
     title: "Categorização Automática",
     description:
-      "Ao subir faturas (PDF, CSV e Excel), a IA Gemini identifica nomes, valores e datas, atribuindo categorias instantaneamente.",
+      "Ao subir faturas (PDF, CSV e Excel), a IA identifica nomes, valores e datas, atribuindo categorias instantaneamente.",
   },
   {
     icon: Sparkles,
