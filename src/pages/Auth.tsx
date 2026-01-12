@@ -65,7 +65,7 @@ export default function Auth() {
         variant: "destructive",
       });
     } else {
-      navigate("/");
+      navigate("/dashboard");
     }
   };
 
@@ -88,7 +88,7 @@ export default function Auth() {
         title: "Conta criada!",
         description: "Bem-vindo ao FinLar!",
       });
-      navigate("/");
+      navigate("/dashboard");
     }
   };
 
