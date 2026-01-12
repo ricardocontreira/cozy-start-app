@@ -113,6 +113,21 @@ const Landing = () => {
                 <a href="#pricing">Ver planos</a>
               </Button>
             </div>
+
+            {/* Video Demo */}
+            <div className="mt-10 max-w-4xl mx-auto">
+              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border bg-card">
+                <div className="aspect-video">
+                  <iframe
+                    src="https://www.loom.com/embed/b077740e85d64b40bac6af155ad5e6c1"
+                    frameBorder="0"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full"
+                    title="FinLar Demo"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
