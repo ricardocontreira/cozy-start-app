@@ -3,7 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Home, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import finlarLogo from "@/assets/finlar-logo.png";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -96,10 +97,7 @@ export default function Auth() {
       {/* Header */}
       <header className="flex items-center justify-between p-4 md:p-6">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Home className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold text-foreground">FinLar</span>
+          <img src={finlarLogo} alt="FinLar" className="h-10" />
         </Link>
         <ThemeToggle />
       </header>
