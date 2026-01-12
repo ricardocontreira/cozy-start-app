@@ -119,7 +119,7 @@ const Landing = () => {
               <div className="relative rounded-xl overflow-hidden shadow-2xl border border-border bg-card">
                 <div className="aspect-video">
                   <iframe
-                    src="https://www.loom.com/embed/b077740e85d64b40bac6af155ad5e6c1"
+                    src="https://www.loom.com/embed/b077740e85d64b40bac6af155ad5e6c1?hideEmbedTopBar=true&hide_share=true&hide_owner=true"
                     frameBorder="0"
                     allowFullScreen
                     className="absolute inset-0 w-full h-full"
