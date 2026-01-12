@@ -1,30 +1,9 @@
 import { Link } from "react-router-dom";
-import {
-  Brain,
-  Sparkles,
-  Upload,
-  Users,
-  Check,
-  Shield,
-  Zap,
-  ChevronRight,
-  TrendingUp,
-} from "lucide-react";
+import { Brain, Sparkles, Upload, Users, Check, Shield, Zap, ChevronRight, TrendingUp } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const aiFeatures = [
@@ -32,7 +11,7 @@ const aiFeatures = [
     icon: Upload,
     title: "Importação com IA",
     description:
-      "Upload de faturas que identifica gastos automaticamente. Suporte a CSV e Excel das principais operadoras de cartão.",
+      "Upload de faturas que identifica gastos automaticamente. Suporte a pdf, CSV e Excel das principais operadoras de cartão.",
   },
   {
     icon: Brain,
@@ -73,22 +52,19 @@ const faqItems = [
   {
     question: "Como funciona a IA de categorização?",
     answer:
-      "Ao fazer upload de uma fatura, nossa IA baseada em Gemini analisa as descrições das transações e atribui categorias automaticamente. Quando você corrige uma categoria, o sistema aprende e aplica a mesma classificação em transações futuras.",
+      "Ao fazer upload de uma fatura, nossa IA analisa as descrições das transações e atribui categorias automaticamente. Quando você corrige uma categoria, o sistema aprende e aplica a mesma classificação em transações futuras.",
   },
   {
     question: "Posso adicionar familiares?",
-    answer:
-      "Sim! Você pode convidar membros ilimitados para sua 'Casa'. Basta compartilhar o código de convite.",
+    answer: "Sim! Você pode convidar membros ilimitados para sua 'Casa'. Basta compartilhar o código de convite.",
   },
   {
     question: "Quais formatos de fatura são aceitos?",
-    answer:
-      "Atualmente suportamos arquivos CSV e Excel (.xlsx). Em breve adicionaremos suporte a PDF.",
+    answer: "Atualmente suportamos arquivos PDF, CSV e Excel (.xlsx).",
   },
   {
     question: "Posso cancelar a qualquer momento?",
-    answer:
-      "Sim, não há fidelidade. Você pode cancelar sua assinatura a qualquer momento sem custos adicionais.",
+    answer: "Sim, não há fidelidade. Você pode cancelar sua assinatura a qualquer momento sem custos adicionais.",
   },
 ];
 
@@ -123,8 +99,8 @@ const Landing = () => {
               Você no controle das suas finanças
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Gerencie as finanças da sua casa de forma inteligente. Com IA que
-              aprende seus hábitos e categoriza gastos automaticamente.
+              Gerencie as finanças da sua casa de forma inteligente. Com IA que aprende seus hábitos e categoriza gastos
+              automaticamente.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="text-base">
@@ -145,20 +121,14 @@ const Landing = () => {
       <section className="py-12 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-              Inteligência que Aprende com Você
-            </h2>
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">Inteligência que Aprende com Você</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Nossa IA trabalha para você, categorizando gastos e aprendendo
-              seus padrões financeiros.
+              Nossa IA trabalha para você, categorizando gastos e aprendendo seus padrões financeiros.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
             {aiFeatures.map((feature, index) => (
-              <Card
-                key={index}
-                className="bg-card border-border hover:border-primary/50 transition-colors"
-              >
+              <Card key={index} className="bg-card border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="pb-2">
                   <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                     <feature.icon className="w-6 h-6 text-primary" />
@@ -166,9 +136,7 @@ const Landing = () => {
                   <CardTitle className="text-lg">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-sm leading-relaxed">
-                    {feature.description}
-                  </CardDescription>
+                  <CardDescription className="text-sm leading-relaxed">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             ))}
@@ -180,12 +148,8 @@ const Landing = () => {
       <section id="pricing" className="py-12 md:py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10 md:mb-14">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-              Plano simples, sem surpresas
-            </h2>
-            <p className="text-muted-foreground">
-              Tudo que você precisa por um preço justo.
-            </p>
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">Plano simples, sem surpresas</h2>
+            <p className="text-muted-foreground">Tudo que você precisa por um preço justo.</p>
           </div>
           <Card className="max-w-md mx-auto border-2 border-primary relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-sm font-medium rounded-bl-lg">
@@ -194,9 +158,7 @@ const Landing = () => {
             <CardHeader className="text-center pt-8 pb-4">
               <CardTitle className="text-xl mb-2">Plano Completo</CardTitle>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl md:text-5xl font-bold text-foreground">
-                  R$ 19,99
-                </span>
+                <span className="text-4xl md:text-5xl font-bold text-foreground">R$ 19,99</span>
                 <span className="text-muted-foreground">/mês</span>
               </div>
             </CardHeader>
@@ -230,9 +192,7 @@ const Landing = () => {
               <Shield className="w-5 h-5" />
               <span className="font-medium">Dúvidas frequentes</span>
             </div>
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground">
-              Perguntas Frequentes
-            </h2>
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground">Perguntas Frequentes</h2>
           </div>
           <div className="max-w-2xl mx-auto">
             <Accordion type="single" collapsible className="space-y-2">
@@ -245,9 +205,7 @@ const Landing = () => {
                   <AccordionTrigger className="text-left text-sm md:text-base hover:no-underline">
                     {item.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-sm">
-                    {item.answer}
-                  </AccordionContent>
+                  <AccordionContent className="text-muted-foreground text-sm">{item.answer}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
@@ -262,9 +220,7 @@ const Landing = () => {
             <div className="flex items-center gap-2">
               <FinLarLogo size="md" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Seu dinheiro, do jeito certo.
-            </p>
+            <p className="text-sm text-muted-foreground">Seu dinheiro, do jeito certo.</p>
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} FinLar. Todos os direitos reservados.
             </p>
