@@ -99,7 +99,7 @@ const Landing = () => {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={finlarLogo} alt="FinLar" className="h-10" />
+            <img src={finlarLogo} alt="FinLar" className="h-12 w-auto" />
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -260,7 +260,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-2">
-              <img src={finlarLogo} alt="FinLar" className="h-8" />
+              <img src={finlarLogo} alt="FinLar" className="h-10 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground">
               Seu dinheiro, do jeito certo.
