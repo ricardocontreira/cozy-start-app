@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Home, Plus, Users, Loader2, ArrowRight } from "lucide-react";
+import { Plus, Users, Loader2, ArrowRight } from "lucide-react";
+import finlarLogo from "@/assets/finlar-logo.png";
 
 import { useHouse } from "@/hooks/useHouse";
 import { Button } from "@/components/ui/button";
@@ -66,10 +67,7 @@ export default function HouseSetup() {
       <OnboardingDialog />
       <header className="flex items-center justify-between p-4 md:p-6">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Home className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold text-foreground">FinLar</span>
+          <img src={finlarLogo} alt="FinLar" className="h-10" />
         </div>
         <ThemeToggle />
       </header>
