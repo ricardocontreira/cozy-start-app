@@ -12,7 +12,6 @@ export function MobileBottomNav({ activeRoute }: MobileBottomNavProps) {
   const navItems = [
     { key: "dashboard", icon: LayoutDashboard, label: "Início", path: "/dashboard" },
     { key: "cards", icon: CreditCard, label: "Cartões", path: "/cards" },
-    { key: "transactions", icon: Wallet, label: "Transações", path: "/dashboard" },
     { key: "settings", icon: Settings, label: "Config", path: "/settings" },
   ] as const;
 
@@ -22,7 +21,7 @@ export function MobileBottomNav({ activeRoute }: MobileBottomNavProps) {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeRoute === item.key;
-          
+
           return (
             <Button
               key={item.key}
