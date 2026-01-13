@@ -132,6 +132,9 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          stripe_customer_id: string | null
+          subscription_id: string | null
+          subscription_status: string | null
           updated_at: string
         }
         Insert: {
@@ -139,6 +142,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -146,6 +152,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -309,6 +318,7 @@ export type Database = {
         Args: { _house_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       is_house_member: {
         Args: { _house_id: string; _user_id: string }
         Returns: boolean
