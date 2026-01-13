@@ -74,8 +74,14 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       subscriptionId = subscription.id;
+      
+      // Safely convert period end to ISO string
+      const periodEnd = subscription.current_period_end;
+      if (periodEnd && typeof periodEnd === 'number') {
+        subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+      }
+      
       logStep("Active subscription found", { subscriptionId, endDate: subscriptionEnd });
 
       // Update profile with subscription info
