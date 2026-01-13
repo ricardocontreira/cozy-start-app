@@ -66,15 +66,32 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Fetch trial_ends_at from profile
+    // Fetch trial_ends_at and bypass_subscription from profile
     const { data: profile } = await supabaseClient
       .from("profiles")
-      .select("trial_ends_at")
+      .select("trial_ends_at, bypass_subscription")
       .eq("id", user.id)
       .single();
 
+    const bypassSubscription = profile?.bypass_subscription ?? false;
     const trialEndsAt = profile?.trial_ends_at ?? null;
     const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : false;
+    
+    // Se tem bypass, retornar como subscribed imediatamente
+    if (bypassSubscription) {
+      logStep("Bypass subscription enabled for user", { userId: user.id });
+      return new Response(JSON.stringify({ 
+        subscribed: true,
+        bypass_active: true,
+        subscription_end: null,
+        cancel_at_period_end: false,
+        trial_ends_at: null,
+        is_in_trial: false,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
     
     logStep("Trial status", { trialEndsAt, isInTrial });
 
