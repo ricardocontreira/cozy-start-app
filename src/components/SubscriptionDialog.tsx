@@ -15,6 +15,7 @@ interface SubscriptionDialogProps {
   loading?: boolean;
   isInTrial?: boolean;
   trialDaysRemaining?: number;
+  trialExpired?: boolean;
 }
 
 export function SubscriptionDialog({
@@ -24,6 +25,7 @@ export function SubscriptionDialog({
   loading,
   isInTrial,
   trialDaysRemaining,
+  trialExpired,
 }: SubscriptionDialogProps) {
   const benefits = [
     "Criar casas ilimitadas",
@@ -42,10 +44,18 @@ export function SubscriptionDialog({
             <Crown className="h-8 w-8 text-primary" />
           </div>
           <DialogTitle className="text-2xl font-bold">
-            {isInTrial ? "Continue com o FinLar Pro" : "Assine o FinLar Pro"}
+            {trialExpired 
+              ? "Período de teste encerrado" 
+              : isInTrial 
+                ? "Continue com o FinLar Pro" 
+                : "Assine o FinLar Pro"}
           </DialogTitle>
           <DialogDescription className="text-base">
-            {isInTrial && trialDaysRemaining !== undefined ? (
+            {trialExpired ? (
+              <span className="text-destructive">
+                Seu período de teste de 7 dias terminou. Assine o FinLar Pro para continuar gerenciando suas finanças.
+              </span>
+            ) : isInTrial && trialDaysRemaining !== undefined ? (
               <span className="flex items-center justify-center gap-2 text-warning">
                 <Clock className="h-4 w-4" />
                 Seu período de teste termina em {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia' : 'dias'}. 

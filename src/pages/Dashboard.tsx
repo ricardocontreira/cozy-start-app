@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles } from "lucide-react";
+import { SubscriptionDialog } from "@/components/SubscriptionDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -46,6 +47,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showTrialExpiredDialog, setShowTrialExpiredDialog] = useState(false);
 
   // Fetch credit cards for the current house
   const { data: creditCards = [], isLoading: cardsLoading } = useQuery({
@@ -114,17 +116,12 @@ export default function Dashboard() {
     }
   }, [houses, houseLoading, user, navigate]);
 
-  // Check for trial expiration and redirect if no access
+  // Check for trial expiration and show subscription dialog if no access
   useEffect(() => {
     if (!subscriptionLoading && !hasAccess && houses.length > 0 && memberRole === "owner") {
-      toast({
-        title: "Período de teste encerrado",
-        description: "Assine o FinLar Pro para continuar usando.",
-        variant: "destructive",
-      });
-      navigate("/");
+      setShowTrialExpiredDialog(true);
     }
-  }, [hasAccess, subscriptionLoading, houses, memberRole, navigate, toast]);
+  }, [hasAccess, subscriptionLoading, houses, memberRole]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -464,6 +461,21 @@ export default function Dashboard() {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav activeRoute="dashboard" />
+
+      {/* Trial Expired Subscription Dialog */}
+      <SubscriptionDialog
+        open={showTrialExpiredDialog}
+        onOpenChange={(open) => {
+          // Don't allow closing if user doesn't have access
+          if (!open && !hasAccess) return;
+          setShowTrialExpiredDialog(open);
+        }}
+        onSubscribe={() => startCheckout()}
+        loading={false}
+        isInTrial={false}
+        trialDaysRemaining={0}
+        trialExpired={true}
+      />
     </div>
   );
 }
