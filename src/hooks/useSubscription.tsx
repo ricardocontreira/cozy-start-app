@@ -7,6 +7,8 @@ interface SubscriptionState {
   isSubscribed: boolean;
   loading: boolean;
   subscriptionEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  cancelling: boolean;
 }
 
 export function useSubscription() {
@@ -16,11 +18,19 @@ export function useSubscription() {
     isSubscribed: false,
     loading: true,
     subscriptionEnd: null,
+    cancelAtPeriodEnd: false,
+    cancelling: false,
   });
 
   const checkSubscription = useCallback(async () => {
     if (!user) {
-      setState({ isSubscribed: false, loading: false, subscriptionEnd: null });
+      setState({ 
+        isSubscribed: false, 
+        loading: false, 
+        subscriptionEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelling: false,
+      });
       return;
     }
 
@@ -35,16 +45,59 @@ export function useSubscription() {
         return;
       }
 
-      setState({
+      setState(prev => ({
+        ...prev,
         isSubscribed: data?.subscribed ?? false,
         loading: false,
         subscriptionEnd: data?.subscription_end ?? null,
-      });
+        cancelAtPeriodEnd: data?.cancel_at_period_end ?? false,
+      }));
     } catch (error) {
       console.error("Error checking subscription:", error);
       setState(prev => ({ ...prev, loading: false }));
     }
   }, [user]);
+
+  const cancelSubscription = useCallback(async () => {
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para cancelar.",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    try {
+      setState(prev => ({ ...prev, cancelling: true }));
+      
+      const { data, error } = await supabase.functions.invoke("cancel-subscription");
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Assinatura cancelada",
+        description: "Você ainda terá acesso até o fim do período pago.",
+      });
+
+      // Refresh subscription status
+      await checkSubscription();
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível cancelar a assinatura. Tente novamente.",
+        variant: "destructive",
+      });
+      return { success: false };
+    } finally {
+      setState(prev => ({ ...prev, cancelling: false }));
+    }
+  }, [user, toast, checkSubscription]);
 
   const startCheckout = useCallback(async () => {
     if (!user) {
@@ -92,5 +145,6 @@ export function useSubscription() {
     ...state,
     checkSubscription,
     startCheckout,
+    cancelSubscription,
   };
 }
