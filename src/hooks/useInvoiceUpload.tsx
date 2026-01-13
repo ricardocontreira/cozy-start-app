@@ -71,24 +71,34 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     fetchUploadHistory();
   }, [fetchUploadHistory]);
 
-  const parseFileContent = async (file: File): Promise<{ content: string; fileType: "pdf" | "text" }> => {
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const parseFileContent = async (file: File): Promise<{ content: string; fileType: "pdf" | "excel" | "csv" }> => {
+    const fileName = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || fileName.endsWith(".pdf");
+    const isExcel = file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      || file.type === "application/vnd.ms-excel"
+      || fileName.endsWith(".xlsx") 
+      || fileName.endsWith(".xls");
+    const isCsv = file.type === "text/csv" || fileName.endsWith(".csv");
     
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (isPdf) {
-          // Para PDF, extrai o base64 do data URL
           const dataUrl = e.target?.result as string;
           const base64 = dataUrl.split(",")[1];
           resolve({ content: base64, fileType: "pdf" });
+        } else if (isExcel) {
+          const dataUrl = e.target?.result as string;
+          const base64 = dataUrl.split(",")[1];
+          resolve({ content: base64, fileType: "excel" });
         } else {
-          resolve({ content: e.target?.result as string, fileType: "text" });
+          // CSV como texto
+          resolve({ content: e.target?.result as string, fileType: "csv" });
         }
       };
       reader.onerror = () => reject(new Error("Failed to read file"));
       
-      if (isPdf) {
+      if (isPdf || isExcel) {
         reader.readAsDataURL(file);
       } else {
         reader.readAsText(file);
