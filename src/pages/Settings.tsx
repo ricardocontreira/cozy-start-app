@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, RefreshCw, Save, Home } from "lucide-react";
+import { ArrowLeft, Copy, Check, RefreshCw, Save, Home, Mail } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
@@ -32,9 +32,12 @@ export default function Settings() {
 
   const [houseName, setHouseName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+
+  const supportEmail = "suportefinlar@gmail.com";
 
   const isOwner = memberRole === "owner";
 
@@ -60,6 +63,20 @@ export default function Settings() {
       });
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const copySupportEmail = () => {
+    navigator.clipboard.writeText(supportEmail);
+    setEmailCopied(true);
+    toast({
+      title: "Email copiado!",
+      description: "O email de suporte foi copiado para a área de transferência.",
+    });
+    setTimeout(() => setEmailCopied(false), 2000);
+  };
+
+  const openSupportEmail = () => {
+    window.location.href = `mailto:${supportEmail}?subject=Suporte FinLar`;
   };
 
   const handleSave = async () => {
@@ -139,9 +156,10 @@ export default function Settings() {
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-4 py-6 md:px-6 md:py-8">
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="members">Membros</TabsTrigger>
+            <TabsTrigger value="support">Suporte</TabsTrigger>
           </TabsList>
 
           {/* General Tab */}
@@ -262,6 +280,41 @@ export default function Settings() {
               isOwner={isOwner}
               currentUserId={user?.id || ""}
             />
+          </TabsContent>
+
+          {/* Support Tab */}
+          <TabsContent value="support" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Precisa de Ajuda?
+                </CardTitle>
+                <CardDescription>
+                  Entre em contato com nossa equipe de suporte
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Se você tiver dúvidas, sugestões ou encontrar algum problema, 
+                  nossa equipe está pronta para ajudar.
+                </p>
+                
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 p-3 bg-muted rounded-lg text-center font-medium">
+                    {supportEmail}
+                  </div>
+                  <Button variant="outline" size="icon" onClick={copySupportEmail}>
+                    {emailCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+                
+                <Button className="w-full" onClick={openSupportEmail}>
+                  <Mail className="w-4 h-4 mr-2" />
+                  Enviar Email
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
