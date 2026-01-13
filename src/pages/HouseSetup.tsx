@@ -36,7 +36,15 @@ export default function HouseSetup() {
   const [activeTab, setActiveTab] = useState("create");
   
   const { createHouse, joinHouse } = useHouse();
-  const { isSubscribed, loading: subscriptionLoading, startCheckout, checkSubscription } = useSubscription();
+  const { 
+    isSubscribed, 
+    isInTrial, 
+    hasAccess,
+    loading: subscriptionLoading, 
+    startCheckout, 
+    checkSubscription,
+    getTrialDaysRemaining,
+  } = useSubscription();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
@@ -82,12 +90,13 @@ export default function HouseSetup() {
   const handleCreateClick = () => {
     if (subscriptionLoading) return;
     
-    if (!isSubscribed) {
+    // Allow if subscribed OR in trial
+    if (!hasAccess) {
       setShowSubscriptionDialog(true);
       return;
     }
     
-    // If subscribed, submit the form
+    // If has access, submit the form
     createForm.handleSubmit(handleCreate)();
   };
 
@@ -117,6 +126,8 @@ export default function HouseSetup() {
     setCheckoutLoading(false);
   };
 
+  const trialDaysRemaining = getTrialDaysRemaining();
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Onboarding Dialog */}
@@ -128,6 +139,8 @@ export default function HouseSetup() {
         onOpenChange={setShowSubscriptionDialog}
         onSubscribe={handleSubscribe}
         loading={checkoutLoading}
+        isInTrial={isInTrial}
+        trialDaysRemaining={trialDaysRemaining}
       />
 
       <header className="flex items-center justify-between p-4 md:p-6">
@@ -147,6 +160,13 @@ export default function HouseSetup() {
             <p className="text-muted-foreground">
               Crie uma nova Casa ou entre em uma existente usando um código de convite.
             </p>
+            
+            {/* Trial info */}
+            {isInTrial && !isSubscribed && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-success/10 text-success px-4 py-2 rounded-full text-sm font-medium">
+                🎉 Você tem {trialDaysRemaining} dias de teste grátis
+              </div>
+            )}
           </div>
 
           <Card className="border-border/50 shadow-lg">

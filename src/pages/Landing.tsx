@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Brain, Sparkles, Upload, Users, Check, Shield, Zap, ChevronRight, TrendingUp } from "lucide-react";
+import { Brain, Sparkles, Upload, Users, Check, Shield, Zap, ChevronRight, TrendingUp, Clock } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +66,10 @@ const faqItems = [
     question: "Posso cancelar a qualquer momento?",
     answer: "Sim, não há fidelidade. Você pode cancelar sua assinatura a qualquer momento sem custos adicionais.",
   },
+  {
+    question: "Como funciona o período de teste?",
+    answer: "Ao se cadastrar, você ganha 7 dias grátis para testar todas as funcionalidades do FinLar Pro. Não é necessário cartão de crédito para começar. Você pode assinar a qualquer momento durante ou após o período de teste.",
+  },
 ];
 
 const Landing = () => {
@@ -91,10 +95,17 @@ const Landing = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
         <div className="container mx-auto px-4 py-12 md:py-20 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+            {/* Trial Badge */}
+            <div className="inline-flex items-center gap-2 bg-success/10 text-success px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Clock className="w-4 h-4" />
+              7 dias grátis para testar
+            </div>
+            
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6 ml-2">
               <Zap className="w-4 h-4" />
               Inteligência Artificial integrada
             </div>
+            
             <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
               Você no controle das suas finanças
             </h1>
@@ -105,7 +116,7 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="text-base">
                 <Link to="/auth">
-                  Começar agora
+                  Começar teste grátis
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </Link>
               </Button>
@@ -113,6 +124,10 @@ const Landing = () => {
                 <a href="#pricing">Ver planos</a>
               </Button>
             </div>
+            
+            <p className="text-sm text-muted-foreground mt-4">
+              Sem cartão de crédito. Cancele a qualquer momento.
+            </p>
 
             {/* Video Demo */}
             <div className="mt-10 max-w-4xl mx-auto">
@@ -168,7 +183,7 @@ const Landing = () => {
           </div>
           <Card className="max-w-md mx-auto border-2 border-primary relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-sm font-medium rounded-bl-lg">
-              Mais popular
+              7 dias grátis
             </div>
             <CardHeader className="text-center pt-8 pb-4">
               <CardTitle className="text-xl mb-2">Plano Completo</CardTitle>
@@ -176,6 +191,9 @@ const Landing = () => {
                 <span className="text-4xl md:text-5xl font-bold text-foreground">R$ 19,99</span>
                 <span className="text-muted-foreground">/mês</span>
               </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Após o período de teste gratuito
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               <ul className="space-y-3">
@@ -190,10 +208,13 @@ const Landing = () => {
               </ul>
               <Button className="w-full" size="lg" asChild>
                 <Link to="/auth">
-                  Assinar agora
+                  Começar teste grátis
                   <TrendingUp className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Sem cartão de crédito para começar
+              </p>
             </CardContent>
           </Card>
         </div>

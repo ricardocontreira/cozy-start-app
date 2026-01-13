@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles } from "lucide-react";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useHouseTransactions } from "@/hooks/useHouseTransactions";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,15 @@ export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
   const { currentHouse, memberRole, houses, selectHouse, loading: houseLoading } = useHouse();
   const { transactions, isLoading: transactionsLoading } = useHouseTransactions({ houseId: currentHouse?.id });
+  const { 
+    isSubscribed, 
+    isInTrial, 
+    hasAccess, 
+    loading: subscriptionLoading, 
+    trialEndsAt,
+    getTrialDaysRemaining,
+    startCheckout,
+  } = useSubscription();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -104,6 +114,18 @@ export default function Dashboard() {
     }
   }, [houses, houseLoading, user, navigate]);
 
+  // Check for trial expiration and redirect if no access
+  useEffect(() => {
+    if (!subscriptionLoading && !hasAccess && houses.length > 0 && memberRole === "owner") {
+      toast({
+        title: "Período de teste encerrado",
+        description: "Assine o FinLar Pro para continuar usando.",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+  }, [hasAccess, subscriptionLoading, houses, memberRole, navigate, toast]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
@@ -138,7 +160,13 @@ export default function Dashboard() {
       .slice(0, 2);
   };
 
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "";
+    return format(new Date(dateStr), "dd 'de' MMMM", { locale: ptBR });
+  };
+
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const trialDaysRemaining = getTrialDaysRemaining();
 
   if (authLoading || houseLoading) {
     return (
@@ -247,6 +275,31 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-8">
+        {/* Trial Banner - Only for owners in trial */}
+        {isInTrial && !isSubscribed && memberRole === "owner" && (
+          <div className="mb-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-amber-900 dark:text-amber-100">
+                    Período de teste: {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+                  </p>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Assine antes de {formatDate(trialEndsAt)} para não perder o acesso
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" className="gap-2" onClick={() => startCheckout()}>
+                <Sparkles className="w-4 h-4" />
+                Assinar agora
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Greeting */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
