@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -203,6 +204,7 @@ REGRAS IMPORTANTES:
 
     // Construir mensagens baseado no tipo de arquivo
     let userContent;
+    let textContent = "";
     
     if (isPdf) {
       userContent = [
@@ -216,21 +218,35 @@ REGRAS IMPORTANTES:
         { type: "text", text: prompt },
       ];
     } else if (isExcel) {
-      // Determinar MIME type baseado na extensão
-      const mimeType = filename.toLowerCase().endsWith(".xlsx")
-        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        : "application/vnd.ms-excel";
+      // Converter Excel para texto usando SheetJS
+      try {
+        // Decodificar base64 para Uint8Array
+        const binaryString = atob(fileContent);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Ler o arquivo Excel
+        const workbook = XLSX.read(bytes, { type: "array" });
+        
+        // Converter todas as planilhas para texto
+        const sheetsContent: string[] = [];
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName];
+          // Converter para CSV para manter estrutura tabular
+          const csvContent = XLSX.utils.sheet_to_csv(sheet, { FS: "\t", RS: "\n" });
+          sheetsContent.push(`=== Planilha: ${sheetName} ===\n${csvContent}`);
+        }
+        textContent = sheetsContent.join("\n\n");
+        console.log(`Excel parsed successfully. Content preview: ${textContent.substring(0, 500)}...`);
+      } catch (parseError) {
+        console.error("Error parsing Excel file:", parseError);
+        throw new Error("Não foi possível ler o arquivo Excel. Verifique se o arquivo não está corrompido.");
+      }
       
-      userContent = [
-        {
-          type: "file",
-          file: {
-            filename: filename,
-            file_data: `data:${mimeType};base64,${fileContent}`,
-          },
-        },
-        { type: "text", text: prompt },
-      ];
+      // Enviar como texto para a IA
+      userContent = prompt + `\n\nCONTEÚDO DA FATURA (EXCEL):\n${textContent}`;
     } else {
       // CSV como texto
       userContent = prompt + `\n\nCONTEÚDO DA FATURA:\n${fileContent}`;
