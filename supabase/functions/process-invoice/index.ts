@@ -71,13 +71,16 @@ serve(async (req) => {
     }
 
     const isPdf = fileType === "pdf";
+    const isExcel = fileType === "excel";
+    const isCsv = fileType === "csv";
 
     // Validate invoiceMonth (required, format YYYY-MM)
     if (!invoiceMonth || !/^\d{4}-\d{2}$/.test(invoiceMonth)) {
       throw new Error("invoiceMonth é obrigatório (formato: YYYY-MM)");
     }
 
-    console.log(`Processing invoice: ${filename} (type: ${isPdf ? "PDF" : "text"}) for card ${cardId}, invoice month: ${invoiceMonth}`);
+    const fileTypeLabel = isPdf ? "PDF" : isExcel ? "Excel" : "CSV";
+    console.log(`Processing invoice: ${filename} (type: ${fileTypeLabel}) for card ${cardId}, invoice month: ${invoiceMonth}`);
 
     // Verify user is owner of the house
     const { data: roleData, error: roleError } = await supabaseAdmin
@@ -171,11 +174,14 @@ serve(async (req) => {
     // Call Lovable AI (Gemini) to extract transactions
     const prompt = `Você é um assistente financeiro especializado em extrair dados de faturas de cartão de crédito.
 
+IMPORTANTE: Extraia CADA transação INDIVIDUALMENTE. NÃO agrupe transações.
+Cada linha de compra deve ser uma transação separada no JSON.
+
 Analise o conteúdo abaixo e extraia TODAS as transações no formato JSON:
 {
   "transactions": [
     {
-      "description": "Nome da compra",
+      "description": "Nome EXATO do estabelecimento/compra",
       "date": "YYYY-MM-DD",
       "amount": 123.45,
       "installment": "1/10 ou null",
@@ -185,26 +191,50 @@ Analise o conteúdo abaixo e extraia TODAS as transações no formato JSON:
 }
 
 REGRAS IMPORTANTES:
+- Extraia CADA compra como uma transação separada
+- Use o NOME REAL do estabelecimento como descrição (ex: "UBER", "NETFLIX", "MERCADO LIVRE", "iFood", "Amazon")
+- NÃO use "Não classificado" como descrição - use sempre o nome real do estabelecimento
 - Se houver parcelamento, SEMPRE formate como X/Y (ex: 1/10, 2/12)
-- Se não conseguir classificar a categoria, use "Não classificado"
+- Se não conseguir classificar a categoria, use "Não classificado" apenas para CATEGORIA, nunca para descrição
 - Valores devem ser números positivos (decimal com ponto)
 - Datas no formato ISO (YYYY-MM-DD)
 - Se a data não estiver clara, use a data mais provável baseada no contexto
-- Ignore linhas que não são transações (totais, cabeçalhos, etc.)`;
+- Ignore linhas que não são transações (totais, cabeçalhos, saldos, etc.)`;
 
     // Construir mensagens baseado no tipo de arquivo
-    const userContent = isPdf
-      ? [
-          {
-            type: "file",
-            file: {
-              filename: filename,
-              file_data: `data:application/pdf;base64,${fileContent}`,
-            },
+    let userContent;
+    
+    if (isPdf) {
+      userContent = [
+        {
+          type: "file",
+          file: {
+            filename: filename,
+            file_data: `data:application/pdf;base64,${fileContent}`,
           },
-          { type: "text", text: prompt },
-        ]
-      : prompt + `\n\nCONTEÚDO DA FATURA:\n${fileContent}`;
+        },
+        { type: "text", text: prompt },
+      ];
+    } else if (isExcel) {
+      // Determinar MIME type baseado na extensão
+      const mimeType = filename.toLowerCase().endsWith(".xlsx")
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/vnd.ms-excel";
+      
+      userContent = [
+        {
+          type: "file",
+          file: {
+            filename: filename,
+            file_data: `data:${mimeType};base64,${fileContent}`,
+          },
+        },
+        { type: "text", text: prompt },
+      ];
+    } else {
+      // CSV como texto
+      userContent = prompt + `\n\nCONTEÚDO DA FATURA:\n${fileContent}`;
+    }
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
