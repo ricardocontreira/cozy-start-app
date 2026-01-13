@@ -109,6 +109,9 @@ export default function CardDetails() {
     uploadInvoice,
     undoUpload,
     refreshHistory,
+    hasMoreHistory,
+    loadMoreHistory,
+    isLoadingMore,
     pendingDuplicates,
     hasPendingDuplicates,
     approveDuplicates,
@@ -390,6 +393,9 @@ export default function CardDetails() {
               isOwner={isOwner}
               houseId={currentHouse?.id || ""}
               onRefresh={refreshHistory}
+              hasMore={hasMoreHistory}
+              onLoadMore={loadMoreHistory}
+              isLoadingMore={isLoadingMore}
             />
           </TabsContent>
         </Tabs>

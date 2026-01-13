@@ -26,9 +26,12 @@ interface UploadHistoryProps {
   isOwner: boolean;
   houseId: string;
   onRefresh?: () => void;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
-export function UploadHistory({ history, isLoading, onUndo, isOwner, houseId, onRefresh }: UploadHistoryProps) {
+export function UploadHistory({ history, isLoading, onUndo, isOwner, houseId, onRefresh, hasMore, onLoadMore, isLoadingMore }: UploadHistoryProps) {
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [selectedUpload, setSelectedUpload] = useState<UploadLog | null>(null);
 
@@ -190,6 +193,25 @@ export function UploadHistory({ history, isLoading, onUndo, isOwner, houseId, on
             </div>
           </div>
         ))}
+        
+        {hasMore && onLoadMore && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="w-full mt-2"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              "Ver mais uploads"
+            )}
+          </Button>
+        )}
       </div>
 
       <UploadTransactionsSheet
