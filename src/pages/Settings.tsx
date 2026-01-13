@@ -146,8 +146,8 @@ export default function Settings() {
 
           {/* General Tab */}
           <TabsContent value="general" className="space-y-6">
-            {/* Subscription Card */}
-            <SubscriptionCard />
+            {/* Subscription Card - only for house owners */}
+            {isOwner && <SubscriptionCard />}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
