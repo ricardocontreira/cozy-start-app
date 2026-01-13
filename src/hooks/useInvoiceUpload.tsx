@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./use-toast";
+import type { PossibleDuplicate } from "@/components/DuplicateReviewDialog";
 
 export interface UploadLog {
   id: string;
@@ -9,7 +10,7 @@ export interface UploadLog {
   user_id: string;
   filename: string;
   items_count: number;
-  status: "processing" | "completed" | "undone" | "error";
+  status: "processing" | "completed" | "undone" | "error" | "pending_review";
   created_at: string;
   billing_month: string | null;
   profiles: {
@@ -22,11 +23,25 @@ interface UseInvoiceUploadOptions {
   houseId: string;
 }
 
+interface UploadResult {
+  success: boolean;
+  uploadId?: string;
+  itemsCount?: number;
+  possibleDuplicates?: PossibleDuplicate[];
+  invoiceMonth?: string;
+}
+
 export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
   const { toast } = useToast();
   const [uploadHistory, setUploadHistory] = useState<UploadLog[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isApprovingDuplicates, setIsApprovingDuplicates] = useState(false);
+  
+  // State for duplicate review
+  const [pendingDuplicates, setPendingDuplicates] = useState<PossibleDuplicate[]>([]);
+  const [pendingUploadId, setPendingUploadId] = useState<string | null>(null);
+  const [pendingInvoiceMonth, setPendingInvoiceMonth] = useState<string | null>(null);
 
   const fetchUploadHistory = useCallback(async () => {
     if (!cardId || !houseId) return;
@@ -106,14 +121,14 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     });
   };
 
-  const uploadInvoice = async (file: File, invoiceMonth: string): Promise<boolean> => {
+  const uploadInvoice = async (file: File, invoiceMonth: string): Promise<UploadResult> => {
     if (!cardId || !houseId) {
       toast({
         title: "Erro",
         description: "Cartão ou casa não selecionados",
         variant: "destructive",
       });
-      return false;
+      return { success: false };
     }
 
     // Validate invoiceMonth format (YYYY-MM)
@@ -123,7 +138,7 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
         description: "Mês da fatura inválido",
         variant: "destructive",
       });
-      return false;
+      return { success: false };
     }
 
     setIsUploading(true);
@@ -150,13 +165,41 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
         throw new Error(data.error);
       }
 
+      // Check if there are possible duplicates to review
+      if (data.possibleDuplicates && data.possibleDuplicates.length > 0) {
+        setPendingDuplicates(data.possibleDuplicates);
+        setPendingUploadId(data.uploadId);
+        setPendingInvoiceMonth(invoiceMonth);
+        
+        // Show message about duplicates
+        if (data.itemsCount > 0) {
+          toast({
+            title: "Transações importadas",
+            description: `${data.itemsCount} transações importadas. ${data.possibleDuplicates.length} possíveis duplicatas aguardando revisão.`,
+          });
+        }
+        
+        return {
+          success: true,
+          uploadId: data.uploadId,
+          itemsCount: data.itemsCount,
+          possibleDuplicates: data.possibleDuplicates,
+          invoiceMonth,
+        };
+      }
+
       toast({
         title: "Sucesso!",
         description: data.message || `${data.itemsCount} transações importadas.`,
       });
 
       await fetchUploadHistory();
-      return true;
+      return {
+        success: true,
+        uploadId: data.uploadId,
+        itemsCount: data.itemsCount,
+        possibleDuplicates: [],
+      };
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
@@ -164,9 +207,91 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
         description: error.message || "Tente novamente mais tarde",
         variant: "destructive",
       });
-      return false;
+      return { success: false };
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const approveDuplicates = async (approvedTransactions: PossibleDuplicate["transaction"][]): Promise<boolean> => {
+    if (!pendingUploadId || !pendingInvoiceMonth) {
+      toast({
+        title: "Erro",
+        description: "Dados de upload pendente não encontrados",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setIsApprovingDuplicates(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("approve-duplicates", {
+        body: {
+          uploadId: pendingUploadId,
+          cardId,
+          houseId,
+          approvedTransactions,
+          invoiceMonth: pendingInvoiceMonth,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Sucesso!",
+        description: data.message || `${data.itemsCount} transações aprovadas.`,
+      });
+
+      // Clear pending state
+      setPendingDuplicates([]);
+      setPendingUploadId(null);
+      setPendingInvoiceMonth(null);
+
+      await fetchUploadHistory();
+      return true;
+    } catch (error: any) {
+      console.error("Approve duplicates error:", error);
+      toast({
+        title: "Erro ao aprovar transações",
+        description: error.message || "Tente novamente mais tarde",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsApprovingDuplicates(false);
+    }
+  };
+
+  const discardDuplicates = async () => {
+    if (!pendingUploadId) return;
+
+    try {
+      // Just update the upload log status to completed
+      await supabase
+        .from("upload_logs")
+        .update({ status: "completed" })
+        .eq("id", pendingUploadId);
+
+      toast({
+        title: "Duplicatas descartadas",
+        description: "As transações duplicadas foram ignoradas.",
+      });
+
+      // Clear pending state
+      setPendingDuplicates([]);
+      setPendingUploadId(null);
+      setPendingInvoiceMonth(null);
+
+      await fetchUploadHistory();
+    } catch (error) {
+      console.error("Error discarding duplicates:", error);
     }
   };
 
@@ -213,5 +338,11 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     uploadInvoice,
     undoUpload,
     refreshHistory: fetchUploadHistory,
+    // Duplicate review
+    pendingDuplicates,
+    hasPendingDuplicates: pendingDuplicates.length > 0,
+    approveDuplicates,
+    discardDuplicates,
+    isApprovingDuplicates,
   };
 }

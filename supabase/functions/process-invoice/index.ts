@@ -19,6 +19,16 @@ interface AIResponse {
   transactions: TransactionData[];
 }
 
+interface PossibleDuplicate {
+  transaction: TransactionData;
+  existingMatch: {
+    description: string;
+    amount: number;
+    transaction_date: string;
+  };
+  similarity: number;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -398,42 +408,77 @@ REGRAS IMPORTANTES:
       return matchingChars / shorter.length;
     }
 
-    // Função para verificar se uma transação é duplicata
+    // Função para encontrar match de duplicata (retorna detalhes em vez de boolean)
     // LÓGICA: Primeiro valida DATA + VALOR, depois verifica se descrição tem 60%+ de similaridade
-    function isDuplicate(
+    function findDuplicateMatch(
       newTx: TransactionData,
       existingList: Array<{ description: string; amount: number; transaction_date: string }>
-    ): boolean {
-      return existingList.some((existing) => {
+    ): { match: { description: string; amount: number; transaction_date: string }; similarity: number } | null {
+      for (const existing of existingList) {
         // PRIMEIRO: Verificar data e valor (critérios objetivos e exatos)
         const dateMatch = existing.transaction_date === newTx.date;
         const amountMatch = Number(existing.amount) === Math.abs(newTx.amount);
         
         // Se data OU valor não batem, definitivamente NÃO é duplicata
         if (!dateMatch || !amountMatch) {
-          return false;
+          continue;
         }
         
         // SEGUNDO: Data e valor batem - verificar se descrição tem 60%+ de similaridade
         const similarity = calculateSimilarity(existing.description, newTx.description);
-        const isSimilar = similarity >= 0.6;
         
-        if (isSimilar) {
-          console.log(`Duplicata detectada (${Math.round(similarity * 100)}% similar): "${newTx.description}" ≈ "${existing.description}" (${newTx.date}, R$${newTx.amount})`);
+        if (similarity >= 0.6) {
+          return { match: existing, similarity };
         }
-        
-        return isSimilar;
-      });
+      }
+      return null;
     }
 
-    // Filtrar transações novas (não duplicadas)
-    const newTransactions = transactions.filter((t: TransactionData) => !isDuplicate(t, existingList));
-    const skippedCount = transactions.length - newTransactions.length;
+    // Separar transações em: novas (inserir direto) e possíveis duplicatas (para revisão do usuário)
+    const newTransactions: TransactionData[] = [];
+    const possibleDuplicates: PossibleDuplicate[] = [];
 
-    console.log(`Found ${transactions.length} transactions, ${skippedCount} already exist, ${newTransactions.length} are new`);
+    for (const tx of transactions) {
+      const duplicateMatch = findDuplicateMatch(tx, existingList);
+      
+      if (duplicateMatch) {
+        possibleDuplicates.push({
+          transaction: tx,
+          existingMatch: duplicateMatch.match,
+          similarity: duplicateMatch.similarity,
+        });
+        console.log(`Possível duplicata (${Math.round(duplicateMatch.similarity * 100)}% similar): "${tx.description}" ≈ "${duplicateMatch.match.description}" (${tx.date}, R$${tx.amount})`);
+      } else {
+        newTransactions.push(tx);
+      }
+    }
 
-    // Se todas as transações já existem
-    if (newTransactions.length === 0 && transactions.length > 0) {
+    const skippedCount = possibleDuplicates.length;
+
+    console.log(`Found ${transactions.length} transactions, ${possibleDuplicates.length} possible duplicates, ${newTransactions.length} are new`);
+
+    // Se não há novas transações mas há possíveis duplicatas, retornar para revisão
+    if (newTransactions.length === 0 && possibleDuplicates.length > 0) {
+      // Atualizar status para aguardando revisão
+      await supabaseAdmin
+        .from("upload_logs")
+        .update({ status: "pending_review", items_count: 0 })
+        .eq("id", uploadId);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          uploadId,
+          itemsCount: 0,
+          possibleDuplicates,
+          message: `${possibleDuplicates.length} possíveis duplicatas encontradas. Revise e aprove as que deseja importar.`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Se não há nenhuma transação
+    if (newTransactions.length === 0 && possibleDuplicates.length === 0 && transactions.length > 0) {
       await supabaseAdmin
         .from("upload_logs")
         .update({ status: "completed", items_count: 0 })
@@ -444,8 +489,8 @@ REGRAS IMPORTANTES:
           success: true,
           uploadId,
           itemsCount: 0,
-          skippedCount,
-          message: "Todas as transações já existem. Nenhuma nova foi importada.",
+          possibleDuplicates: [],
+          message: "Nenhuma transação nova encontrada.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -507,7 +552,7 @@ REGRAS IMPORTANTES:
       })
       .eq("id", uploadId);
 
-    console.log(`Successfully processed ${newTransactions.length} transactions, skipped ${skippedCount} duplicates, ${categorizedFromHistory} categorized from history`);
+    console.log(`Successfully processed ${newTransactions.length} transactions, ${possibleDuplicates.length} possible duplicates for review, ${categorizedFromHistory} categorized from history`);
 
     let message = `${newTransactions.length} transações importadas com sucesso!`;
     
@@ -515,8 +560,16 @@ REGRAS IMPORTANTES:
       message += ` ${categorizedFromHistory} categorizadas automaticamente pelo histórico.`;
     }
     
-    if (skippedCount > 0) {
-      message += ` ${skippedCount} já existiam e foram ignoradas.`;
+    if (possibleDuplicates.length > 0) {
+      message += ` ${possibleDuplicates.length} possíveis duplicatas aguardando sua revisão.`;
+    }
+
+    // Se há possíveis duplicatas, atualizar status
+    if (possibleDuplicates.length > 0) {
+      await supabaseAdmin
+        .from("upload_logs")
+        .update({ status: "pending_review" })
+        .eq("id", uploadId);
     }
 
     return new Response(
@@ -524,7 +577,7 @@ REGRAS IMPORTANTES:
         success: true,
         uploadId,
         itemsCount: newTransactions.length,
-        skippedCount,
+        possibleDuplicates,
         categorizedFromHistory,
         message,
       }),

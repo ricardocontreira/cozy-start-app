@@ -20,8 +20,16 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
+interface UploadResult {
+  success: boolean;
+  uploadId?: string;
+  itemsCount?: number;
+  possibleDuplicates?: unknown[];
+  invoiceMonth?: string;
+}
+
 interface InvoiceUploaderProps {
-  onUpload: (file: File, invoiceMonth: string) => Promise<boolean>;
+  onUpload: (file: File, invoiceMonth: string) => Promise<UploadResult>;
   isUploading: boolean;
   disabled?: boolean;
 }
@@ -118,9 +126,9 @@ export function InvoiceUploader({ onUpload, isUploading, disabled }: InvoiceUplo
     setUploadState("uploading");
     
     const invoiceMonth = `${selectedYear}-${selectedMonth}`;
-    const success = await onUpload(pendingFile, invoiceMonth);
+    const result = await onUpload(pendingFile, invoiceMonth);
     
-    setUploadState(success ? "success" : "error");
+    setUploadState(result.success ? "success" : "error");
     setPendingFile(null);
     setTimeout(() => setUploadState("idle"), 3000);
   };

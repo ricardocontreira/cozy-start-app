@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceUploader } from "@/components/InvoiceUploader";
 import { UploadHistory } from "@/components/UploadHistory";
 import { InvoicesList } from "@/components/InvoicesList";
+import { DuplicateReviewDialog } from "@/components/DuplicateReviewDialog";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -108,6 +109,11 @@ export default function CardDetails() {
     uploadInvoice,
     undoUpload,
     refreshHistory,
+    pendingDuplicates,
+    hasPendingDuplicates,
+    approveDuplicates,
+    discardDuplicates,
+    isApprovingDuplicates,
   } = useInvoiceUpload({ 
     cardId: cardId || "", 
     houseId: currentHouse?.id || "" 
@@ -533,6 +539,20 @@ export default function CardDetails() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Duplicate Review Dialog */}
+      <DuplicateReviewDialog
+        open={hasPendingDuplicates}
+        onOpenChange={(open) => {
+          if (!open) {
+            discardDuplicates();
+          }
+        }}
+        duplicates={pendingDuplicates}
+        onApprove={approveDuplicates}
+        onDiscardAll={discardDuplicates}
+        isLoading={isApprovingDuplicates}
+      />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav activeRoute="cards" />
