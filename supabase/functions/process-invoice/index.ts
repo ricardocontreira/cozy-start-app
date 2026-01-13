@@ -352,14 +352,48 @@ REGRAS IMPORTANTES:
 
     const existingList = existingTransactions || [];
 
-    // Função para verificar se uma transação é duplicata (sem considerar installment)
+    // Função para normalizar descrição para comparação
+    function normalizeDescription(desc: string): string {
+      return desc
+        .toLowerCase()
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+        .replace(/[^a-z0-9\s]/g, "")     // Remove caracteres especiais
+        .replace(/\s+/g, " ");            // Normaliza espaços
+    }
+
+    // Função para comparar descrições com tolerância a truncamento
+    function areSimilarDescriptions(desc1: string, desc2: string): boolean {
+      const norm1 = normalizeDescription(desc1);
+      const norm2 = normalizeDescription(desc2);
+      
+      // Comparação exata após normalização
+      if (norm1 === norm2) return true;
+      
+      // Verificar se um é prefixo do outro (para nomes truncados)
+      // Requer pelo menos 10 caracteres para evitar falsos positivos
+      if (norm1.length >= 10 && norm2.length >= 10) {
+        const shorter = norm1.length < norm2.length ? norm1 : norm2;
+        const longer = norm1.length >= norm2.length ? norm1 : norm2;
+        
+        // Se o menor é 70%+ do maior e é prefixo, considera similar
+        if (shorter.length >= longer.length * 0.7 && longer.startsWith(shorter)) {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+
+    // Função para verificar se uma transação é duplicata (com comparação normalizada)
     function isDuplicate(
       newTx: TransactionData,
       existingList: Array<{ description: string; amount: number; transaction_date: string }>
     ): boolean {
       return existingList.some(
         (existing) =>
-          existing.description === newTx.description &&
+          areSimilarDescriptions(existing.description, newTx.description) &&
           Number(existing.amount) === Math.abs(newTx.amount) &&
           existing.transaction_date === newTx.date
       );
