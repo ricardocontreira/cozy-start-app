@@ -182,7 +182,7 @@ Analise o conteúdo abaixo e extraia TODAS as transações no formato JSON:
 {
   "transactions": [
     {
-      "description": "Nome EXATO do estabelecimento/compra",
+      "description": "Descrição EXATAMENTE como aparece no arquivo",
       "date": "YYYY-MM-DD",
       "amount": 123.45,
       "installment": "1/10 ou null",
@@ -193,10 +193,13 @@ Analise o conteúdo abaixo e extraia TODAS as transações no formato JSON:
 
 REGRAS IMPORTANTES:
 - Extraia CADA compra como uma transação separada
-- Use o NOME REAL do estabelecimento como descrição (ex: "UBER", "NETFLIX", "MERCADO LIVRE", "iFood", "Amazon")
-- NÃO use "Não classificado" como descrição - use sempre o nome real do estabelecimento
+- COPIE A DESCRIÇÃO EXATAMENTE como aparece no arquivo original, sem modificar, interpretar ou "limpar" o texto
+  - Se está "IFOOD *IFOOD", use "IFOOD *IFOOD"
+  - Se está "PAG*JOSELITO", use "PAG*JOSELITO"
+  - Se está "UBER *UBER TRIP", use "UBER *UBER TRIP"
+  - Se está "MP *MERCADOLIVRE", use "MP *MERCADOLIVRE"
+  - NÃO simplifique para "iFood", "Uber", "Mercado Livre", etc.
 - Se houver parcelamento, SEMPRE formate como X/Y (ex: 1/10, 2/12)
-- Se não conseguir classificar a categoria, use "Não classificado" apenas para CATEGORIA, nunca para descrição
 - Valores devem ser números positivos (decimal com ponto)
 - Datas no formato ISO (YYYY-MM-DD)
 - Se a data não estiver clara, use a data mais provável baseada no contexto
