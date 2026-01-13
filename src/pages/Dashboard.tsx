@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles } from "lucide-react";
 import { SubscriptionDialog } from "@/components/SubscriptionDialog";
+import { MemberAccessBlockedDialog } from "@/components/MemberAccessBlockedDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,7 +33,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
-  const { currentHouse, memberRole, houses, selectHouse, loading: houseLoading } = useHouse();
+  const { currentHouse, memberRole, houses, selectHouse, leaveHouse, loading: houseLoading } = useHouse();
   const { transactions, isLoading: transactionsLoading } = useHouseTransactions({ houseId: currentHouse?.id });
   const { 
     isSubscribed, 
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showTrialExpiredDialog, setShowTrialExpiredDialog] = useState(false);
+  const [showMemberBlockedDialog, setShowMemberBlockedDialog] = useState(false);
 
   // Fetch credit cards for the current house
   const { data: creditCards = [], isLoading: cardsLoading } = useQuery({
@@ -116,10 +118,17 @@ export default function Dashboard() {
     }
   }, [houses, houseLoading, user, navigate]);
 
-  // Check for trial expiration and show subscription dialog if no access
+  // Check for trial expiration and show subscription dialog if no access (owners)
   useEffect(() => {
     if (!subscriptionLoading && !hasAccess && houses.length > 0 && memberRole === "owner") {
       setShowTrialExpiredDialog(true);
+    }
+  }, [hasAccess, subscriptionLoading, houses, memberRole]);
+
+  // Check for trial expiration and show blocked dialog if no access (members/viewers)
+  useEffect(() => {
+    if (!subscriptionLoading && !hasAccess && houses.length > 0 && memberRole === "viewer") {
+      setShowMemberBlockedDialog(true);
     }
   }, [hasAccess, subscriptionLoading, houses, memberRole]);
 
@@ -475,6 +484,17 @@ export default function Dashboard() {
         isInTrial={false}
         trialDaysRemaining={0}
         trialExpired={true}
+      />
+
+      {/* Member Access Blocked Dialog */}
+      <MemberAccessBlockedDialog
+        open={showMemberBlockedDialog}
+        onOpenChange={setShowMemberBlockedDialog}
+        onLeaveHouse={async () => {
+          await leaveHouse();
+          navigate("/house-setup");
+        }}
+        houseName={currentHouse?.name || ""}
       />
     </div>
   );
