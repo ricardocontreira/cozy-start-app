@@ -355,15 +355,14 @@ REGRAS IMPORTANTES:
 
     const existingList = existingTransactions || [];
 
-    // Função para normalizar descrição para comparação
+    // Função para normalizar descrição para comparação (remove espaços e caracteres especiais)
     function normalizeDescription(desc: string): string {
       return desc
         .toLowerCase()
         .trim()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-        .replace(/[^a-z0-9\s]/g, "")     // Remove caracteres especiais
-        .replace(/\s+/g, " ");            // Normaliza espaços
+        .replace(/[^a-z0-9]/g, "");       // Remove TUDO exceto letras e números (incluindo espaços)
     }
 
     // Função para comparar descrições com tolerância a truncamento
@@ -375,13 +374,13 @@ REGRAS IMPORTANTES:
       if (norm1 === norm2) return true;
       
       // Verificar se um é prefixo do outro (para nomes truncados)
-      // Requer pelo menos 10 caracteres para evitar falsos positivos
-      if (norm1.length >= 10 && norm2.length >= 10) {
+      // Requer pelo menos 8 caracteres para evitar falsos positivos
+      if (norm1.length >= 8 && norm2.length >= 8) {
         const shorter = norm1.length < norm2.length ? norm1 : norm2;
         const longer = norm1.length >= norm2.length ? norm1 : norm2;
         
-        // Se o menor é 70%+ do maior e é prefixo, considera similar
-        if (shorter.length >= longer.length * 0.7 && longer.startsWith(shorter)) {
+        // Se o menor é 60%+ do maior e é prefixo, considera similar
+        if (shorter.length >= longer.length * 0.6 && longer.startsWith(shorter)) {
           return true;
         }
       }
