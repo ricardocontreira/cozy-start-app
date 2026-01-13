@@ -49,9 +49,20 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    // Handle missing or expired sessions gracefully (not as an error)
+    if (userError || !userData.user?.email) {
+      logStep("No valid session, returning unsubscribed state");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        trial_ends_at: null,
+        is_in_trial: false,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
