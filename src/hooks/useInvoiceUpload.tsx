@@ -31,29 +31,41 @@ interface UploadResult {
   invoiceMonth?: string;
 }
 
+const PAGE_SIZE = 15;
+
 export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
   const { toast } = useToast();
   const [uploadHistory, setUploadHistory] = useState<UploadLog[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isApprovingDuplicates, setIsApprovingDuplicates] = useState(false);
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // State for duplicate review
   const [pendingDuplicates, setPendingDuplicates] = useState<PossibleDuplicate[]>([]);
   const [pendingUploadId, setPendingUploadId] = useState<string | null>(null);
   const [pendingInvoiceMonth, setPendingInvoiceMonth] = useState<string | null>(null);
 
-  const fetchUploadHistory = useCallback(async () => {
+  const fetchUploadHistory = useCallback(async (loadMore = false) => {
     if (!cardId || !houseId) return;
 
+    if (loadMore) {
+      setIsLoadingMore(true);
+    }
+
     try {
-      const { data, error } = await supabase
+      const currentLength = loadMore ? uploadHistory.length : 0;
+      const from = currentLength;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, error, count } = await supabase
         .from("upload_logs")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("card_id", cardId)
         .eq("house_id", houseId)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .range(from, to);
 
       if (error) throw error;
       
@@ -74,17 +86,30 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
         }
       })) as UploadLog[];
       
-      setUploadHistory(logsWithProfiles);
+      if (loadMore) {
+        setUploadHistory(prev => [...prev, ...logsWithProfiles]);
+      } else {
+        setUploadHistory(logsWithProfiles);
+      }
+
+      // Check if there are more items to load
+      const totalLoaded = currentLength + logsWithProfiles.length;
+      setHasMoreHistory((count || 0) > totalLoaded);
     } catch (error) {
       console.error("Error fetching upload history:", error);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [cardId, houseId]);
+  }, [cardId, houseId, uploadHistory.length]);
+
+  const loadMoreHistory = useCallback(() => {
+    fetchUploadHistory(true);
+  }, [fetchUploadHistory]);
 
   useEffect(() => {
     fetchUploadHistory();
-  }, [fetchUploadHistory]);
+  }, [cardId, houseId]);
 
   const parseFileContent = async (file: File): Promise<{ content: string; fileType: "pdf" | "excel" | "csv" }> => {
     const fileName = file.name.toLowerCase();
@@ -337,7 +362,11 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
     isLoading,
     uploadInvoice,
     undoUpload,
-    refreshHistory: fetchUploadHistory,
+    refreshHistory: () => fetchUploadHistory(false),
+    // Pagination
+    hasMoreHistory,
+    loadMoreHistory,
+    isLoadingMore,
     // Duplicate review
     pendingDuplicates,
     hasPendingDuplicates: pendingDuplicates.length > 0,
