@@ -12,6 +12,20 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+// Safely convert Unix timestamp to ISO string
+const safeTimestampToISO = (timestamp: unknown): string | null => {
+  try {
+    if (timestamp === null || timestamp === undefined) return null;
+    const ts = Number(timestamp);
+    if (isNaN(ts) || ts <= 0) return null;
+    const date = new Date(ts * 1000);
+    if (isNaN(date.getTime())) return null;
+    return date.toISOString();
+  } catch {
+    return null;
+  }
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -41,13 +55,12 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
       logStep("No customer found, user is not subscribed");
       
-      // Update profile to inactive
       await supabaseClient
         .from("profiles")
         .update({ subscription_status: "inactive" })
@@ -69,22 +82,16 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionEnd = null;
-    let subscriptionId = null;
+    let subscriptionEnd: string | null = null;
+    let subscriptionId: string | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionId = subscription.id;
-      
-      // Safely convert period end to ISO string
-      const periodEnd = subscription.current_period_end;
-      if (periodEnd && typeof periodEnd === 'number') {
-        subscriptionEnd = new Date(periodEnd * 1000).toISOString();
-      }
+      subscriptionEnd = safeTimestampToISO(subscription.current_period_end);
       
       logStep("Active subscription found", { subscriptionId, endDate: subscriptionEnd });
 
-      // Update profile with subscription info
       await supabaseClient
         .from("profiles")
         .update({
@@ -96,7 +103,6 @@ serve(async (req) => {
     } else {
       logStep("No active subscription found");
       
-      // Update profile to inactive
       await supabaseClient
         .from("profiles")
         .update({ subscription_status: "inactive" })
