@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HouseMembersList } from "@/components/HouseMembersList";
 import { LeaveHouseDialog } from "@/components/LeaveHouseDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { SubscriptionCard } from "@/components/SubscriptionCard";
 
 export default function Settings() {
   const { user, loading: authLoading } = useAuth();
@@ -145,6 +146,8 @@ export default function Settings() {
 
           {/* General Tab */}
           <TabsContent value="general" className="space-y-6">
+            {/* Subscription Card */}
+            <SubscriptionCard />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

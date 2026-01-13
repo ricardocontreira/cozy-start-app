@@ -9,21 +9,7 @@ const corsHeaders = {
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
-};
-
-// Safely convert Unix timestamp to ISO string
-const safeTimestampToISO = (timestamp: unknown): string | null => {
-  try {
-    if (timestamp === null || timestamp === undefined) return null;
-    const ts = Number(timestamp);
-    if (isNaN(ts) || ts <= 0) return null;
-    const date = new Date(ts * 1000);
-    if (isNaN(date.getTime())) return null;
-    return date.toISOString();
-  } catch {
-    return null;
-  }
+  console.log(`[CANCEL-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -59,17 +45,7 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      logStep("No customer found, user is not subscribed");
-      
-      await supabaseClient
-        .from("profiles")
-        .update({ subscription_status: "inactive" })
-        .eq("id", user.id);
-
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      throw new Error("No Stripe customer found for this user");
     }
 
     const customerId = customers.data[0].id;
@@ -81,45 +57,36 @@ serve(async (req) => {
       limit: 1,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionEnd: string | null = null;
-    let subscriptionId: string | null = null;
-    let cancelAtPeriodEnd = false;
-
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionId = subscription.id;
-      subscriptionEnd = safeTimestampToISO(subscription.current_period_end);
-      cancelAtPeriodEnd = subscription.cancel_at_period_end ?? false;
-      
-      logStep("Active subscription found", { 
-        subscriptionId, 
-        endDate: subscriptionEnd,
-        cancelAtPeriodEnd 
-      });
-
-      const status = cancelAtPeriodEnd ? "cancelling" : "active";
-      await supabaseClient
-        .from("profiles")
-        .update({
-          subscription_status: status,
-          stripe_customer_id: customerId,
-          subscription_id: subscriptionId,
-        })
-        .eq("id", user.id);
-    } else {
-      logStep("No active subscription found");
-      
-      await supabaseClient
-        .from("profiles")
-        .update({ subscription_status: "inactive" })
-        .eq("id", user.id);
+    if (subscriptions.data.length === 0) {
+      throw new Error("No active subscription found");
     }
 
+    const subscription = subscriptions.data[0];
+    logStep("Found active subscription", { subscriptionId: subscription.id });
+
+    // Cancel at period end - user keeps access until subscription expires
+    const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
+      cancel_at_period_end: true,
+    });
+
+    logStep("Subscription set to cancel at period end", { 
+      subscriptionId: updatedSubscription.id,
+      cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
+      currentPeriodEnd: updatedSubscription.current_period_end
+    });
+
+    // Update profile to reflect cancellation scheduled
+    await supabaseClient
+      .from("profiles")
+      .update({
+        subscription_status: "cancelling",
+      })
+      .eq("id", user.id);
+
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      subscription_end: subscriptionEnd,
-      cancel_at_period_end: cancelAtPeriodEnd,
+      success: true,
+      cancel_at_period_end: true,
+      current_period_end: updatedSubscription.current_period_end,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
