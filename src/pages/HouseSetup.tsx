@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,13 +7,16 @@ import { Plus, Users, Loader2, ArrowRight } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 
 import { useHouse } from "@/hooks/useHouse";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { SubscriptionDialog } from "@/components/SubscriptionDialog";
+import { useToast } from "@/components/ui/use-toast";
 
 const createHouseSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -28,8 +31,15 @@ type JoinHouseData = z.infer<typeof joinHouseSchema>;
 
 export default function HouseSetup() {
   const [loading, setLoading] = useState(false);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("create");
+  
   const { createHouse, joinHouse } = useHouse();
+  const { isSubscribed, loading: subscriptionLoading, startCheckout, checkSubscription } = useSubscription();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
 
   const createForm = useForm<CreateHouseData>({
     resolver: zodResolver(createHouseSchema),
@@ -40,6 +50,46 @@ export default function HouseSetup() {
     resolver: zodResolver(joinHouseSchema),
     defaultValues: { code: "" },
   });
+
+  // Handle success/cancelled redirects from Stripe
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const cancelled = searchParams.get("cancelled");
+
+    if (success === "true") {
+      toast({
+        title: "Assinatura ativada!",
+        description: "Bem-vindo ao FinLar Pro! Agora você pode criar sua Casa.",
+      });
+      // Clear the URL params
+      setSearchParams({});
+      // Refresh subscription status
+      checkSubscription();
+      // Set active tab to create
+      setActiveTab("create");
+    }
+
+    if (cancelled === "true") {
+      toast({
+        title: "Checkout cancelado",
+        description: "O checkout foi cancelado. Você pode tentar novamente.",
+        variant: "destructive",
+      });
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams, toast, checkSubscription]);
+
+  const handleCreateClick = () => {
+    if (subscriptionLoading) return;
+    
+    if (!isSubscribed) {
+      setShowSubscriptionDialog(true);
+      return;
+    }
+    
+    // If subscribed, submit the form
+    createForm.handleSubmit(handleCreate)();
+  };
 
   const handleCreate = async (data: CreateHouseData) => {
     setLoading(true);
@@ -61,10 +111,25 @@ export default function HouseSetup() {
     }
   };
 
+  const handleSubscribe = async () => {
+    setCheckoutLoading(true);
+    await startCheckout();
+    setCheckoutLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Onboarding Dialog */}
       <OnboardingDialog />
+      
+      {/* Subscription Dialog */}
+      <SubscriptionDialog
+        open={showSubscriptionDialog}
+        onOpenChange={setShowSubscriptionDialog}
+        onSubscribe={handleSubscribe}
+        loading={checkoutLoading}
+      />
+
       <header className="flex items-center justify-between p-4 md:p-6">
         <div className="flex items-center gap-2">
           <FinLarLogo size="lg" />
@@ -86,7 +151,7 @@ export default function HouseSetup() {
 
           <Card className="border-border/50 shadow-lg">
             <CardContent className="pt-6">
-              <Tabs defaultValue="create" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
                   <TabsTrigger value="create" className="gap-2">
                     <Plus className="w-4 h-4" />
@@ -99,7 +164,7 @@ export default function HouseSetup() {
                 </TabsList>
 
                 <TabsContent value="create">
-                  <form onSubmit={createForm.handleSubmit(handleCreate)} className="space-y-4">
+                  <form onSubmit={(e) => { e.preventDefault(); handleCreateClick(); }} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="house-name">Nome da Casa</Label>
                       <Input
@@ -123,11 +188,15 @@ export default function HouseSetup() {
                       </p>
                     </div>
 
-                    <Button type="submit" className="w-full h-11 gap-2" disabled={loading}>
-                      {loading ? (
+                    <Button 
+                      type="submit" 
+                      className="w-full h-11 gap-2" 
+                      disabled={loading || subscriptionLoading}
+                    >
+                      {loading || subscriptionLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Criando...
+                          {subscriptionLoading ? "Verificando..." : "Criando..."}
                         </>
                       ) : (
                         <>
