@@ -365,40 +365,65 @@ REGRAS IMPORTANTES:
         .replace(/[^a-z0-9]/g, "");       // Remove TUDO exceto letras e números (incluindo espaços)
     }
 
-    // Função para comparar descrições com tolerância a truncamento
-    function areSimilarDescriptions(desc1: string, desc2: string): boolean {
+    // Função para calcular similaridade entre descrições (baseada em caracteres em comum do início)
+    function calculateSimilarity(desc1: string, desc2: string): number {
       const norm1 = normalizeDescription(desc1);
       const norm2 = normalizeDescription(desc2);
       
-      // Comparação exata após normalização
-      if (norm1 === norm2) return true;
+      // Match exato = 100%
+      if (norm1 === norm2) return 1.0;
       
-      // Verificar se um é prefixo do outro (para nomes truncados)
-      // Requer pelo menos 8 caracteres para evitar falsos positivos
-      if (norm1.length >= 8 && norm2.length >= 8) {
-        const shorter = norm1.length < norm2.length ? norm1 : norm2;
-        const longer = norm1.length >= norm2.length ? norm1 : norm2;
-        
-        // Se o menor é 60%+ do maior e é prefixo, considera similar
-        if (shorter.length >= longer.length * 0.6 && longer.startsWith(shorter)) {
-          return true;
+      // Se um dos dois é muito curto, não comparar
+      if (norm1.length < 5 || norm2.length < 5) return 0;
+      
+      const shorter = norm1.length <= norm2.length ? norm1 : norm2;
+      const longer = norm1.length > norm2.length ? norm1 : norm2;
+      
+      // Verificar se o menor é prefixo do maior (truncamento completo)
+      if (longer.startsWith(shorter)) {
+        return 1.0;
+      }
+      
+      // Calcular quantos caracteres coincidem desde o início
+      let matchingChars = 0;
+      for (let i = 0; i < shorter.length; i++) {
+        if (shorter[i] === longer[i]) {
+          matchingChars++;
+        } else {
+          break; // Para no primeiro caractere diferente
         }
       }
       
-      return false;
+      // Retornar a proporção de caracteres que coincidem
+      return matchingChars / shorter.length;
     }
 
-    // Função para verificar se uma transação é duplicata (com comparação normalizada)
+    // Função para verificar se uma transação é duplicata
+    // LÓGICA: Primeiro valida DATA + VALOR, depois verifica se descrição tem 60%+ de similaridade
     function isDuplicate(
       newTx: TransactionData,
       existingList: Array<{ description: string; amount: number; transaction_date: string }>
     ): boolean {
-      return existingList.some(
-        (existing) =>
-          areSimilarDescriptions(existing.description, newTx.description) &&
-          Number(existing.amount) === Math.abs(newTx.amount) &&
-          existing.transaction_date === newTx.date
-      );
+      return existingList.some((existing) => {
+        // PRIMEIRO: Verificar data e valor (critérios objetivos e exatos)
+        const dateMatch = existing.transaction_date === newTx.date;
+        const amountMatch = Number(existing.amount) === Math.abs(newTx.amount);
+        
+        // Se data OU valor não batem, definitivamente NÃO é duplicata
+        if (!dateMatch || !amountMatch) {
+          return false;
+        }
+        
+        // SEGUNDO: Data e valor batem - verificar se descrição tem 60%+ de similaridade
+        const similarity = calculateSimilarity(existing.description, newTx.description);
+        const isSimilar = similarity >= 0.6;
+        
+        if (isSimilar) {
+          console.log(`Duplicata detectada (${Math.round(similarity * 100)}% similar): "${newTx.description}" ≈ "${existing.description}" (${newTx.date}, R$${newTx.amount})`);
+        }
+        
+        return isSimilar;
+      });
     }
 
     // Filtrar transações novas (não duplicadas)
