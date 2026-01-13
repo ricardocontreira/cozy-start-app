@@ -115,7 +115,7 @@ const Landing = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="text-base">
-                <Link to="/auth">
+                <Link to="/auth?mode=signup">
                   Começar teste grátis
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </Link>
@@ -207,7 +207,7 @@ const Landing = () => {
                 ))}
               </ul>
               <Button className="w-full" size="lg" asChild>
-                <Link to="/auth">
+                <Link to="/auth?mode=signup">
                   Começar teste grátis
                   <TrendingUp className="w-5 h-5 ml-2" />
                 </Link>
