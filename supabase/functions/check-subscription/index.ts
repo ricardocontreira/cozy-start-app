@@ -55,18 +55,34 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Fetch trial_ends_at from profile
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("trial_ends_at")
+      .eq("id", user.id)
+      .single();
+
+    const trialEndsAt = profile?.trial_ends_at ?? null;
+    const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : false;
+    
+    logStep("Trial status", { trialEndsAt, isInTrial });
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      logStep("No customer found, user is not subscribed");
+      logStep("No customer found, checking trial status");
       
       await supabaseClient
         .from("profiles")
         .update({ subscription_status: "inactive" })
         .eq("id", user.id);
 
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        trial_ends_at: trialEndsAt,
+        is_in_trial: isInTrial,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -120,6 +136,8 @@ serve(async (req) => {
       subscribed: hasActiveSub,
       subscription_end: subscriptionEnd,
       cancel_at_period_end: cancelAtPeriodEnd,
+      trial_ends_at: trialEndsAt,
+      is_in_trial: isInTrial,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

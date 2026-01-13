@@ -9,6 +9,9 @@ interface SubscriptionState {
   subscriptionEnd: string | null;
   cancelAtPeriodEnd: boolean;
   cancelling: boolean;
+  trialEndsAt: string | null;
+  isInTrial: boolean;
+  hasAccess: boolean; // subscribed OR in trial
 }
 
 export function useSubscription() {
@@ -20,6 +23,9 @@ export function useSubscription() {
     subscriptionEnd: null,
     cancelAtPeriodEnd: false,
     cancelling: false,
+    trialEndsAt: null,
+    isInTrial: false,
+    hasAccess: false,
   });
 
   const checkSubscription = useCallback(async () => {
@@ -30,6 +36,9 @@ export function useSubscription() {
         subscriptionEnd: null,
         cancelAtPeriodEnd: false,
         cancelling: false,
+        trialEndsAt: null,
+        isInTrial: false,
+        hasAccess: false,
       });
       return;
     }
@@ -45,12 +54,19 @@ export function useSubscription() {
         return;
       }
 
+      const isSubscribed = data?.subscribed ?? false;
+      const isInTrial = data?.is_in_trial ?? false;
+      const hasAccess = isSubscribed || isInTrial;
+
       setState(prev => ({
         ...prev,
-        isSubscribed: data?.subscribed ?? false,
+        isSubscribed,
         loading: false,
         subscriptionEnd: data?.subscription_end ?? null,
         cancelAtPeriodEnd: data?.cancel_at_period_end ?? false,
+        trialEndsAt: data?.trial_ends_at ?? null,
+        isInTrial,
+        hasAccess,
       }));
     } catch (error) {
       console.error("Error checking subscription:", error);
@@ -141,10 +157,21 @@ export function useSubscription() {
     return () => clearInterval(interval);
   }, [user, checkSubscription]);
 
+  // Helper to calculate days remaining in trial
+  const getTrialDaysRemaining = useCallback(() => {
+    if (!state.trialEndsAt) return 0;
+    const now = new Date();
+    const trialEnd = new Date(state.trialEndsAt);
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, [state.trialEndsAt]);
+
   return {
     ...state,
     checkSubscription,
     startCheckout,
     cancelSubscription,
+    getTrialDaysRemaining,
   };
 }

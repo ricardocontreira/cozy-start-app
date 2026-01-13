@@ -6,13 +6,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, Sparkles } from "lucide-react";
+import { Crown, Check, Sparkles, Clock } from "lucide-react";
 
 interface SubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubscribe: () => void;
   loading?: boolean;
+  isInTrial?: boolean;
+  trialDaysRemaining?: number;
 }
 
 export function SubscriptionDialog({
@@ -20,6 +22,8 @@ export function SubscriptionDialog({
   onOpenChange,
   onSubscribe,
   loading,
+  isInTrial,
+  trialDaysRemaining,
 }: SubscriptionDialogProps) {
   const benefits = [
     "Criar casas ilimitadas",
@@ -38,10 +42,18 @@ export function SubscriptionDialog({
             <Crown className="h-8 w-8 text-primary" />
           </div>
           <DialogTitle className="text-2xl font-bold">
-            Assine o FinLar Pro
+            {isInTrial ? "Continue com o FinLar Pro" : "Assine o FinLar Pro"}
           </DialogTitle>
           <DialogDescription className="text-base">
-            Para criar uma Casa, você precisa ser assinante do FinLar Pro.
+            {isInTrial && trialDaysRemaining !== undefined ? (
+              <span className="flex items-center justify-center gap-2 text-warning">
+                <Clock className="h-4 w-4" />
+                Seu período de teste termina em {trialDaysRemaining} {trialDaysRemaining === 1 ? 'dia' : 'dias'}. 
+                Assine agora para não perder o acesso!
+              </span>
+            ) : (
+              "Para criar uma Casa, você precisa ser assinante do FinLar Pro."
+            )}
           </DialogDescription>
         </DialogHeader>
 
