@@ -529,7 +529,7 @@ export default function ExpenseDetails() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav activeRoute="transactions" />
+      <MobileBottomNav activeRoute="dashboard" />
     </div>
   );
 }

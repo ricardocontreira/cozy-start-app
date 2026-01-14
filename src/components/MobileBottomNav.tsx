@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { LayoutDashboard, CreditCard, Wallet, Settings } from "lucide-react";
+import { LayoutDashboard, CreditCard, Target, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MobileBottomNavProps {
-  activeRoute?: "dashboard" | "cards" | "transactions" | "settings";
+  activeRoute?: "dashboard" | "cards" | "planning" | "settings";
 }
 
 export function MobileBottomNav({ activeRoute }: MobileBottomNavProps) {
@@ -12,6 +12,7 @@ export function MobileBottomNav({ activeRoute }: MobileBottomNavProps) {
   const navItems = [
     { key: "dashboard", icon: LayoutDashboard, label: "Início", path: "/dashboard" },
     { key: "cards", icon: CreditCard, label: "Cartões", path: "/cards" },
+    { key: "planning", icon: Target, label: "Metas", path: "/planning" },
     { key: "settings", icon: Settings, label: "Config", path: "/settings" },
   ] as const;
 
