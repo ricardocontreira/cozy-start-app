@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, TrendingDown, TrendingUp, PiggyBank } from "lucide-react";
+import { Plus, TrendingDown, TrendingUp, PiggyBank, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,10 @@ import {
 import { AddExpenseDialog } from "./AddExpenseDialog";
 import { AddIncomeDialog } from "./AddIncomeDialog";
 import { AddContributionDialog } from "./AddContributionDialog";
+import { AddGoalDialog } from "./AddGoalDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useHouse } from "@/hooks/useHouse";
+import { useFinancialGoals, GoalFormData } from "@/hooks/useFinancialGoals";
 
 interface AddTransactionFabProps {
   onSuccess?: () => void;
@@ -19,6 +23,21 @@ export function AddTransactionFab({ onSuccess }: AddTransactionFabProps) {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [contributionDialogOpen, setContributionDialogOpen] = useState(false);
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+
+  const { user } = useAuth();
+  const { currentHouse } = useHouse();
+  const { createGoal, refetch: refetchGoals } = useFinancialGoals(currentHouse?.id || null);
+
+  const handleCreateGoal = async (data: GoalFormData) => {
+    if (!user) return false;
+    const success = await createGoal(data, user.id);
+    if (success) {
+      refetchGoals();
+      onSuccess?.();
+    }
+    return success;
+  };
 
   return (
     <>
@@ -54,6 +73,13 @@ export function AddTransactionFab({ onSuccess }: AddTransactionFabProps) {
               <PiggyBank className="w-4 h-4 text-blue-500" />
               Novo Aporte
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setGoalDialogOpen(true)}
+              className="gap-2 cursor-pointer"
+            >
+              <Target className="w-4 h-4 text-primary" />
+              Nova Meta
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -72,6 +98,11 @@ export function AddTransactionFab({ onSuccess }: AddTransactionFabProps) {
         open={contributionDialogOpen}
         onOpenChange={setContributionDialogOpen}
         onSuccess={onSuccess}
+      />
+      <AddGoalDialog
+        open={goalDialogOpen}
+        onOpenChange={setGoalDialogOpen}
+        onSubmit={handleCreateGoal}
       />
     </>
   );
