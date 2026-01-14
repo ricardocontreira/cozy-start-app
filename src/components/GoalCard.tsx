@@ -1,6 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Target, Trash2, Calendar, TrendingUp, Percent, Pencil } from "lucide-react";
+import { Target, Trash2, Calendar, TrendingUp, Percent, Pencil, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCardProps) {
+  const navigate = useNavigate();
+  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -212,6 +215,16 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
             🎉 Meta alcançada!
           </div>
         )}
+
+        {/* View Details Button */}
+        <Button 
+          variant="outline" 
+          className="w-full gap-2 mt-2"
+          onClick={() => navigate(`/goals/${goal.id}`)}
+        >
+          Ver detalhes
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </CardContent>
     </Card>
   );
