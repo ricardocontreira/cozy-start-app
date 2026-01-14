@@ -86,16 +86,6 @@ export default function Planning() {
       </header>
 
       <main className="p-4 space-y-4">
-        {/* Add Goal Button (Owner Only) */}
-        {isOwner && (
-          <Button 
-            onClick={() => setDialogOpen(true)}
-            className="w-full bg-primary hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Meta
-          </Button>
-        )}
 
         {/* Goals List */}
         {goals.length === 0 ? (
@@ -126,6 +116,19 @@ export default function Planning() {
           </div>
         )}
       </main>
+
+      {/* FAB for adding goals */}
+      {isOwner && (
+        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
 
       {/* Add Goal Dialog */}
       <AddGoalDialog
