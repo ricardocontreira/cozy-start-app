@@ -2,9 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Target } from "lucide-react";
+import { addMonths } from "date-fns";
+import { Target } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +20,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { GoalFormData } from "@/hooks/useFinancialGoals";
 
 const formSchema = z.object({
@@ -35,13 +27,13 @@ const formSchema = z.object({
   initial_capital: z.coerce.number().min(0, "O capital inicial deve ser maior ou igual a 0"),
   target_amount: z.coerce.number().positive("O valor da meta deve ser maior que 0"),
   annual_interest_rate: z.coerce.number().min(0, "A taxa deve ser maior ou igual a 0").max(100, "A taxa deve ser menor ou igual a 100"),
-  deadline: z.date({
-    required_error: "Selecione uma data limite",
-  }),
+  months: z.coerce.number().int("Deve ser um número inteiro").min(1, "O prazo deve ser de pelo menos 1 mês").max(360, "O prazo máximo é de 360 meses"),
 }).refine((data) => data.target_amount > data.initial_capital, {
   message: "O valor da meta deve ser maior que o capital inicial",
   path: ["target_amount"],
 });
+
+type FormData = z.infer<typeof formSchema>;
 
 interface AddGoalDialogProps {
   open: boolean;
@@ -52,19 +44,32 @@ interface AddGoalDialogProps {
 export function AddGoalDialog({ open, onOpenChange, onSubmit }: AddGoalDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<GoalFormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       initial_capital: 0,
       target_amount: 0,
       annual_interest_rate: 12,
+      months: 12,
     },
   });
 
-  const handleSubmit = async (data: GoalFormData) => {
+  const handleSubmit = async (data: FormData) => {
     setIsSubmitting(true);
-    const success = await onSubmit(data);
+    
+    // Convert months to deadline date
+    const deadline = addMonths(new Date(), data.months);
+    
+    const goalData: GoalFormData = {
+      title: data.title,
+      initial_capital: data.initial_capital,
+      target_amount: data.target_amount,
+      annual_interest_rate: data.annual_interest_rate,
+      deadline,
+    };
+    
+    const success = await onSubmit(goalData);
     setIsSubmitting(false);
     
     if (success) {
@@ -161,40 +166,22 @@ export function AddGoalDialog({ open, onOpenChange, onSubmit }: AddGoalDialogPro
 
             <FormField
               control={form.control}
-              name="deadline"
+              name="months"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Data Limite</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                <FormItem>
+                  <FormLabel>Prazo (meses)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min="1"
+                      max="360"
+                      placeholder="12" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Em quantos meses você quer atingir essa meta?
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
