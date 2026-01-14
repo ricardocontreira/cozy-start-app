@@ -69,6 +69,7 @@ export type Database = {
       }
       financial_goals: {
         Row: {
+          annual_interest_rate: number
           created_at: string
           deadline: string
           house_id: string
@@ -80,6 +81,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          annual_interest_rate?: number
           created_at?: string
           deadline: string
           house_id: string
@@ -91,6 +93,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          annual_interest_rate?: number
           created_at?: string
           deadline?: string
           house_id?: string
