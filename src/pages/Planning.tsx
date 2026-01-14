@@ -11,19 +11,21 @@ import { GoalCard } from "@/components/GoalCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useFinancialGoals, FinancialGoal, GoalFormData } from "@/hooks/useFinancialGoals";
+import { usePlannerProfile } from "@/hooks/usePlannerProfile";
 
 export default function Planning() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { currentHouse, memberRole, loading: houseLoading } = useHouse();
   const { goals, loading: goalsLoading, createGoal, updateGoal, deleteGoal, calculateProgress } = useFinancialGoals(currentHouse?.id || null);
+  const { isPlanner, loading: plannerLoading } = usePlannerProfile();
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
 
   const isOwner = memberRole === "owner";
-  const isLoading = authLoading || houseLoading || goalsLoading;
+  const isLoading = authLoading || houseLoading || goalsLoading || plannerLoading;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -31,11 +33,18 @@ export default function Planning() {
     }
   }, [user, authLoading, navigate]);
 
+  // Redirect planners to their own dashboard
   useEffect(() => {
-    if (!houseLoading && !currentHouse && user) {
+    if (!plannerLoading && isPlanner) {
+      navigate("/planner");
+    }
+  }, [isPlanner, plannerLoading, navigate]);
+
+  useEffect(() => {
+    if (!houseLoading && !currentHouse && user && !isPlanner) {
       navigate("/house-setup");
     }
-  }, [currentHouse, houseLoading, user, navigate]);
+  }, [currentHouse, houseLoading, user, isPlanner, navigate]);
 
   const handleCreateGoal = async (data: GoalFormData) => {
     if (!user) return false;

@@ -49,6 +49,13 @@ export default function Settings() {
     }
   }, [user, authLoading, navigate]);
 
+  // Redirect planners to their own settings
+  useEffect(() => {
+    if (!plannerLoading && isPlannerAdmin) {
+      navigate("/planner/settings");
+    }
+  }, [isPlannerAdmin, plannerLoading, navigate]);
+
   useEffect(() => {
     if (currentHouse) {
       setHouseName(currentHouse.name);
