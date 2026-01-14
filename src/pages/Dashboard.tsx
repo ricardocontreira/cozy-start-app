@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus } from "lucide-react";
 import { useFinancialGoals } from "@/hooks/useFinancialGoals";
+import { useGoalContributions } from "@/hooks/useGoalContributions";
 import { Progress } from "@/components/ui/progress";
+import { AddContributionDialog } from "@/components/AddContributionDialog";
 import { SubscriptionDialog } from "@/components/SubscriptionDialog";
 import { MemberAccessBlockedDialog } from "@/components/MemberAccessBlockedDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -52,6 +54,7 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showTrialExpiredDialog, setShowTrialExpiredDialog] = useState(false);
   const [showMemberBlockedDialog, setShowMemberBlockedDialog] = useState(false);
+  const [showContributionDialog, setShowContributionDialog] = useState(false);
 
   // Fetch credit cards for the current house
   const { data: creditCards = [], isLoading: cardsLoading } = useQuery({
@@ -69,7 +72,29 @@ export default function Dashboard() {
   });
 
   // Fetch financial goals for the current house
-  const { goals, loading: goalsLoading, calculateProgress } = useFinancialGoals(currentHouse?.id || null);
+  const { goals, loading: goalsLoading, calculateProgress, refetch: refetchGoals } = useFinancialGoals(currentHouse?.id || null);
+
+  // Fetch goal contributions
+  const { 
+    getContributionsByMonth, 
+    getTotalByMonth, 
+    refetch: refetchContributions 
+  } = useGoalContributions(currentHouse?.id || null);
+
+  // Get contributions for selected month
+  const monthlyContributions = getContributionsByMonth(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth()
+  );
+  const monthlyContributionsTotal = getTotalByMonth(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth()
+  );
+
+  const handleContributionSuccess = () => {
+    refetchGoals();
+    refetchContributions();
+  };
 
   // Calculate monthly expenses (only type='expense')
   const monthlyExpenses = useMemo(() => {
@@ -544,10 +569,90 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Monthly Contributions Preview */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Aportes do Mês</CardTitle>
+              <CardDescription className="capitalize">{selectedPeriodLabel}</CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => setShowContributionDialog(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Novo Aporte
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {monthlyContributions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <PiggyBank className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum aporte neste mês.</p>
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-primary"
+                  onClick={() => setShowContributionDialog(true)}
+                >
+                  Registrar primeiro aporte
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Total do Mês */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <PiggyBank className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="font-medium">Total do Mês</span>
+                  </div>
+                  <span className="text-xl font-bold text-primary">
+                    {formatCurrency(monthlyContributionsTotal)}
+                  </span>
+                </div>
+
+                {/* Lista de aportes */}
+                {monthlyContributions.slice(0, 3).map((contribution) => (
+                  <button
+                    key={contribution.id}
+                    onClick={() => navigate("/planning")}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                        <Target className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {contribution.goal?.title || "Meta"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {contribution.description} • {format(new Date(contribution.contribution_date), "dd/MM")}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-semibold text-primary shrink-0 ml-2">
+                      {formatCurrency(Number(contribution.amount))}
+                    </span>
+                  </button>
+                ))}
+                {monthlyContributions.length > 3 && (
+                  <p className="text-sm text-center text-muted-foreground pt-2">
+                    +{monthlyContributions.length - 3} {monthlyContributions.length - 3 === 1 ? "aporte" : "aportes"}
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       {/* FAB for adding expense/income */}
-      <AddTransactionFab />
+      <AddTransactionFab onSuccess={handleContributionSuccess} />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav activeRoute="dashboard" />
@@ -576,6 +681,13 @@ export default function Dashboard() {
           navigate("/house-setup");
         }}
         houseName={currentHouse?.name || ""}
+      />
+
+      {/* Add Contribution Dialog */}
+      <AddContributionDialog
+        open={showContributionDialog}
+        onOpenChange={setShowContributionDialog}
+        onSuccess={handleContributionSuccess}
       />
     </div>
   );

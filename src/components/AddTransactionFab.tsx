@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, TrendingDown, TrendingUp } from "lucide-react";
+import { Plus, TrendingDown, TrendingUp, PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AddExpenseDialog } from "./AddExpenseDialog";
 import { AddIncomeDialog } from "./AddIncomeDialog";
+import { AddContributionDialog } from "./AddContributionDialog";
 
 interface AddTransactionFabProps {
   onSuccess?: () => void;
@@ -17,6 +18,7 @@ interface AddTransactionFabProps {
 export function AddTransactionFab({ onSuccess }: AddTransactionFabProps) {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
+  const [contributionDialogOpen, setContributionDialogOpen] = useState(false);
 
   return (
     <>
@@ -45,6 +47,13 @@ export function AddTransactionFab({ onSuccess }: AddTransactionFabProps) {
               <TrendingUp className="w-4 h-4 text-success" />
               Nova Receita
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setContributionDialogOpen(true)}
+              className="gap-2 cursor-pointer"
+            >
+              <PiggyBank className="w-4 h-4 text-blue-500" />
+              Novo Aporte
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -57,6 +66,11 @@ export function AddTransactionFab({ onSuccess }: AddTransactionFabProps) {
       <AddIncomeDialog
         open={incomeDialogOpen}
         onOpenChange={setIncomeDialogOpen}
+        onSuccess={onSuccess}
+      />
+      <AddContributionDialog
+        open={contributionDialogOpen}
+        onOpenChange={setContributionDialogOpen}
         onSuccess={onSuccess}
       />
     </>

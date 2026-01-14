@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInMonths, differenceInDays } from "date-fns";
@@ -13,6 +13,7 @@ export interface FinancialGoal {
   deadline: string;
   created_at: string;
   updated_at: string;
+  total_contributions?: number;
 }
 
 export interface GoalFormData {
@@ -27,7 +28,7 @@ export function useFinancialGoals(houseId: string | null) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchGoals = async () => {
+  const fetchGoals = useCallback(async () => {
     if (!houseId) {
       setGoals([]);
       setLoading(false);
@@ -35,14 +36,36 @@ export function useFinancialGoals(houseId: string | null) {
     }
 
     try {
-      const { data, error } = await supabase
+      // Fetch goals
+      const { data: goalsData, error: goalsError } = await supabase
         .from("financial_goals")
         .select("*")
         .eq("house_id", houseId)
         .order("deadline", { ascending: true });
 
-      if (error) throw error;
-      setGoals(data || []);
+      if (goalsError) throw goalsError;
+
+      // Fetch all contributions for this house
+      const { data: contributionsData, error: contributionsError } = await supabase
+        .from("goal_contributions")
+        .select("goal_id, amount")
+        .eq("house_id", houseId);
+
+      if (contributionsError) throw contributionsError;
+
+      // Calculate total contributions per goal
+      const contributionsByGoal: Record<string, number> = {};
+      (contributionsData || []).forEach((c) => {
+        contributionsByGoal[c.goal_id] = (contributionsByGoal[c.goal_id] || 0) + Number(c.amount);
+      });
+
+      // Merge contributions into goals
+      const goalsWithContributions = (goalsData || []).map((goal) => ({
+        ...goal,
+        total_contributions: contributionsByGoal[goal.id] || 0,
+      }));
+
+      setGoals(goalsWithContributions);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar metas",
@@ -52,7 +75,7 @@ export function useFinancialGoals(houseId: string | null) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [houseId, toast]);
 
   useEffect(() => {
     fetchGoals();
@@ -148,8 +171,9 @@ export function useFinancialGoals(houseId: string | null) {
   };
 
   const calculateProgress = (goal: FinancialGoal) => {
-    const percentage = (goal.initial_capital / goal.target_amount) * 100;
-    const remaining = goal.target_amount - goal.initial_capital;
+    const currentCapital = Number(goal.initial_capital) + (goal.total_contributions || 0);
+    const percentage = (currentCapital / goal.target_amount) * 100;
+    const remaining = goal.target_amount - currentCapital;
     
     const today = new Date();
     const deadline = new Date(goal.deadline);
@@ -163,7 +187,9 @@ export function useFinancialGoals(houseId: string | null) {
 
     return {
       percentage: Math.min(percentage, 100),
-      remaining,
+      currentCapital,
+      remaining: Math.max(0, remaining),
+      totalContributions: goal.total_contributions || 0,
       monthsRemaining: Math.max(0, monthsRemaining),
       daysRemaining: Math.max(0, daysRemaining),
       monthlyContribution: monthsRemaining > 0 ? monthlyContribution : 0,
