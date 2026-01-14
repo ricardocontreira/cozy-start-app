@@ -217,7 +217,7 @@ export default function PlannerSettings() {
       </main>
 
       {/* Mobile Navigation */}
-      <PlannerBottomNav activeRoute="settings" isPlannerAdmin={isPlannerAdmin} />
+      <PlannerBottomNav activeRoute="settings" />
     </div>
   );
 }

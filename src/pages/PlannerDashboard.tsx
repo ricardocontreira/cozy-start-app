@@ -331,7 +331,7 @@ export default function PlannerDashboard() {
       </AlertDialog>
 
       {/* Mobile Navigation */}
-      <PlannerBottomNav activeRoute="home" isPlannerAdmin={isPlannerAdmin} />
+      <PlannerBottomNav activeRoute="home" />
     </div>
   );
 }

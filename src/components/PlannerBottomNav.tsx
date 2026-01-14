@@ -1,20 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, Settings } from "lucide-react";
+import { LayoutDashboard, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PlannerBottomNavProps {
-  activeRoute?: "home" | "team" | "settings";
-  isPlannerAdmin?: boolean;
+  activeRoute?: "home" | "settings";
 }
 
-export function PlannerBottomNav({ activeRoute, isPlannerAdmin }: PlannerBottomNavProps) {
+export function PlannerBottomNav({ activeRoute }: PlannerBottomNavProps) {
   const navigate = useNavigate();
 
   const navItems = [
     { key: "home", icon: LayoutDashboard, label: "Início", path: "/planner" },
-    ...(isPlannerAdmin
-      ? [{ key: "team", icon: Users, label: "Equipe", path: "/planner/team" }]
-      : []),
     { key: "settings", icon: Settings, label: "Config", path: "/planner/settings" },
   ] as const;
 
