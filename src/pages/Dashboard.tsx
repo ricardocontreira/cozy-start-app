@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useFinancialGoals } from "@/hooks/useFinancialGoals";
+import { useFinancialGoals, GoalFormData } from "@/hooks/useFinancialGoals";
 import { useGoalContributions, GoalContribution } from "@/hooks/useGoalContributions";
 import { Progress } from "@/components/ui/progress";
 import { AddContributionDialog } from "@/components/AddContributionDialog";
 import { EditContributionDialog } from "@/components/EditContributionDialog";
 import { SubscriptionDialog } from "@/components/SubscriptionDialog";
+import { AddGoalDialog } from "@/components/AddGoalDialog";
 import { MemberAccessBlockedDialog } from "@/components/MemberAccessBlockedDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { format } from "date-fns";
@@ -59,6 +60,7 @@ export default function Dashboard() {
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [showEditContributionDialog, setShowEditContributionDialog] = useState(false);
   const [selectedContribution, setSelectedContribution] = useState<GoalContribution | null>(null);
+  const [showGoalDialog, setShowGoalDialog] = useState(false);
 
   // Fetch credit cards for the current house
   const { data: creditCards = [], isLoading: cardsLoading } = useQuery({
@@ -76,7 +78,7 @@ export default function Dashboard() {
   });
 
   // Fetch financial goals for the current house
-  const { goals, loading: goalsLoading, calculateProgress, refetch: refetchGoals } = useFinancialGoals(currentHouse?.id || null);
+  const { goals, loading: goalsLoading, calculateProgress, createGoal, refetch: refetchGoals } = useFinancialGoals(currentHouse?.id || null);
 
   // Fetch goal contributions
   const { 
@@ -100,6 +102,15 @@ export default function Dashboard() {
   const handleContributionSuccess = () => {
     refetchGoals();
     refetchContributions();
+  };
+
+  const handleCreateGoal = async (data: GoalFormData) => {
+    if (!user) return false;
+    const success = await createGoal(data, user.id);
+    if (success) {
+      refetchGoals();
+    }
+    return success;
   };
 
   const handleEditContribution = (contribution: GoalContribution) => {
@@ -608,7 +619,7 @@ export default function Dashboard() {
                 <Button 
                   variant="link" 
                   className="mt-2 text-primary"
-                  onClick={() => navigate("/planning")}
+                  onClick={() => setShowGoalDialog(true)}
                 >
                   Criar primeira meta
                 </Button>
@@ -765,6 +776,13 @@ export default function Dashboard() {
         onUpdate={updateContribution}
         onDelete={deleteContribution}
         onSuccess={handleContributionSuccess}
+      />
+
+      {/* Add Goal Dialog */}
+      <AddGoalDialog
+        open={showGoalDialog}
+        onOpenChange={setShowGoalDialog}
+        onSubmit={handleCreateGoal}
       />
     </div>
   );
