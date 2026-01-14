@@ -434,28 +434,37 @@ REGRAS IMPORTANTES:
       return null;
     }
 
-    // Separar transações em: novas (inserir direto) e possíveis duplicatas (para revisão do usuário)
+    // Separar transações em 3 grupos:
+    // 1. novas (inserir direto)
+    // 2. duplicatas definitivas (descartar automaticamente - 100% similaridade)
+    // 3. possíveis duplicatas (para revisão do usuário - 60-99% similaridade)
     const newTransactions: TransactionData[] = [];
     const possibleDuplicates: PossibleDuplicate[] = [];
+    const definitiveDuplicates: TransactionData[] = [];
 
     for (const tx of transactions) {
       const duplicateMatch = findDuplicateMatch(tx, existingList);
       
       if (duplicateMatch) {
-        possibleDuplicates.push({
-          transaction: tx,
-          existingMatch: duplicateMatch.match,
-          similarity: duplicateMatch.similarity,
-        });
-        console.log(`Possível duplicata (${Math.round(duplicateMatch.similarity * 100)}% similar): "${tx.description}" ≈ "${duplicateMatch.match.description}" (${tx.date}, R$${tx.amount})`);
+        if (duplicateMatch.similarity === 1.0) {
+          // 100% similar = duplicata definitiva, descartar silenciosamente
+          definitiveDuplicates.push(tx);
+          console.log(`Duplicata definitiva descartada: "${tx.description}" (${tx.date}, R$${tx.amount})`);
+        } else {
+          // 60-99% similar = possível duplicata, enviar para revisão
+          possibleDuplicates.push({
+            transaction: tx,
+            existingMatch: duplicateMatch.match,
+            similarity: duplicateMatch.similarity,
+          });
+          console.log(`Possível duplicata (${Math.round(duplicateMatch.similarity * 100)}% similar): "${tx.description}" ≈ "${duplicateMatch.match.description}" (${tx.date}, R$${tx.amount})`);
+        }
       } else {
         newTransactions.push(tx);
       }
     }
 
-    const skippedCount = possibleDuplicates.length;
-
-    console.log(`Found ${transactions.length} transactions, ${possibleDuplicates.length} possible duplicates, ${newTransactions.length} are new`);
+    console.log(`Resultado: ${newTransactions.length} novas, ${definitiveDuplicates.length} descartadas automaticamente, ${possibleDuplicates.length} para revisão`);
 
     // Se não há novas transações mas há possíveis duplicatas, retornar para revisão
     if (newTransactions.length === 0 && possibleDuplicates.length > 0) {
@@ -555,6 +564,10 @@ REGRAS IMPORTANTES:
     console.log(`Successfully processed ${newTransactions.length} transactions, ${possibleDuplicates.length} possible duplicates for review, ${categorizedFromHistory} categorized from history`);
 
     let message = `${newTransactions.length} transações importadas com sucesso!`;
+    
+    if (definitiveDuplicates.length > 0) {
+      message += ` ${definitiveDuplicates.length} duplicatas descartadas automaticamente.`;
+    }
     
     if (categorizedFromHistory > 0) {
       message += ` ${categorizedFromHistory} categorizadas automaticamente pelo histórico.`;
