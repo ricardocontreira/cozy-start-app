@@ -500,15 +500,9 @@ export default function Dashboard() {
               <CardTitle className="text-lg font-semibold">Aportes do Mês</CardTitle>
               <CardDescription className="capitalize">{selectedPeriodLabel}</CardDescription>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={() => setShowContributionDialog(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Novo Aporte
-            </Button>
+            <span className="text-xl font-bold text-primary">
+              {formatCurrency(monthlyContributionsTotal)}
+            </span>
           </CardHeader>
           <CardContent>
             {monthlyContributions.length === 0 ? (
@@ -592,13 +586,12 @@ export default function Dashboard() {
               <CardDescription>Acompanhe seu progresso</CardDescription>
             </div>
             <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
+              variant="ghost" 
+              size="icon"
               onClick={() => navigate("/planning")}
+              aria-label="Ver todas as metas"
             >
-              <Target className="w-4 h-4" />
-              Ver todas
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </CardHeader>
           <CardContent>
@@ -668,13 +661,12 @@ export default function Dashboard() {
               <CardDescription>Gerencie seus cartões</CardDescription>
             </div>
             <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
+              variant="ghost" 
+              size="icon"
               onClick={() => navigate("/cards")}
+              aria-label="Ver todos os cartões"
             >
-              <CreditCard className="w-4 h-4" />
-              Ver todos
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </CardHeader>
           <CardContent>
