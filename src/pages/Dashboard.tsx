@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil } from "lucide-react";
 import { useFinancialGoals } from "@/hooks/useFinancialGoals";
-import { useGoalContributions } from "@/hooks/useGoalContributions";
+import { useGoalContributions, GoalContribution } from "@/hooks/useGoalContributions";
 import { Progress } from "@/components/ui/progress";
 import { AddContributionDialog } from "@/components/AddContributionDialog";
+import { EditContributionDialog } from "@/components/EditContributionDialog";
 import { SubscriptionDialog } from "@/components/SubscriptionDialog";
 import { MemberAccessBlockedDialog } from "@/components/MemberAccessBlockedDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -55,6 +56,8 @@ export default function Dashboard() {
   const [showTrialExpiredDialog, setShowTrialExpiredDialog] = useState(false);
   const [showMemberBlockedDialog, setShowMemberBlockedDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
+  const [showEditContributionDialog, setShowEditContributionDialog] = useState(false);
+  const [selectedContribution, setSelectedContribution] = useState<GoalContribution | null>(null);
 
   // Fetch credit cards for the current house
   const { data: creditCards = [], isLoading: cardsLoading } = useQuery({
@@ -78,6 +81,8 @@ export default function Dashboard() {
   const { 
     getContributionsByMonth, 
     getTotalByMonth, 
+    updateContribution,
+    deleteContribution,
     refetch: refetchContributions 
   } = useGoalContributions(currentHouse?.id || null);
 
@@ -95,6 +100,13 @@ export default function Dashboard() {
     refetchGoals();
     refetchContributions();
   };
+
+  const handleEditContribution = (contribution: GoalContribution) => {
+    setSelectedContribution(contribution);
+    setShowEditContributionDialog(true);
+  };
+
+  const isOwner = memberRole === "owner";
 
   // Calculate monthly expenses (only type='expense')
   const monthlyExpenses = useMemo(() => {
@@ -477,16 +489,15 @@ export default function Dashboard() {
 
                 {/* Lista de aportes */}
                 {monthlyContributions.slice(0, 3).map((contribution) => (
-                  <button
+                  <div
                     key={contribution.id}
-                    onClick={() => navigate("/planning")}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
+                    className="flex items-center justify-between p-3 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
                         <Target className="w-5 h-5 text-blue-500" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-foreground truncate">
                           {contribution.goal?.title || "Meta"}
                         </p>
@@ -495,80 +506,28 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <span className="font-semibold text-primary shrink-0 ml-2">
-                      {formatCurrency(Number(contribution.amount))}
-                    </span>
-                  </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-semibold text-primary">
+                        {formatCurrency(Number(contribution.amount))}
+                      </span>
+                      {isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleEditContribution(contribution)}
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 ))}
                 {monthlyContributions.length > 3 && (
                   <p className="text-sm text-center text-muted-foreground pt-2">
                     +{monthlyContributions.length - 3} {monthlyContributions.length - 3 === 1 ? "aporte" : "aportes"}
                   </p>
                 )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Credit Cards Preview */}
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">Cartões de Crédito</CardTitle>
-              <CardDescription>Gerencie seus cartões</CardDescription>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={() => navigate("/cards")}
-            >
-              <CreditCard className="w-4 h-4" />
-              Ver todos
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {cardsLoading ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <Skeleton className="h-20" />
-                <Skeleton className="h-20" />
-              </div>
-            ) : creditCards.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Nenhum cartão cadastrado ainda.</p>
-                <Button 
-                  variant="link" 
-                  className="mt-2 text-primary"
-                  onClick={() => navigate("/cards")}
-                >
-                  Adicionar primeiro cartão
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {creditCards.map((card) => (
-                  <button
-                    key={card.id}
-                    onClick={() => navigate(`/cards/${card.id}`)}
-                    className="flex items-center gap-3 p-4 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
-                    style={{ borderLeftColor: card.color, borderLeftWidth: 4 }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${card.color}20` }}
-                    >
-                      <CreditCard className="w-5 h-5" style={{ color: card.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">{card.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        •••• {card.last_digits}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </button>
-                ))}
               </div>
             )}
           </CardContent>
@@ -649,6 +608,70 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Credit Cards Preview */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Cartões de Crédito</CardTitle>
+              <CardDescription>Gerencie seus cartões</CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => navigate("/cards")}
+            >
+              <CreditCard className="w-4 h-4" />
+              Ver todos
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {cardsLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+              </div>
+            ) : creditCards.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum cartão cadastrado ainda.</p>
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-primary"
+                  onClick={() => navigate("/cards")}
+                >
+                  Adicionar primeiro cartão
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {creditCards.map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => navigate(`/cards/${card.id}`)}
+                    className="flex items-center gap-3 p-4 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
+                    style={{ borderLeftColor: card.color, borderLeftWidth: 4 }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${card.color}20` }}
+                    >
+                      <CreditCard className="w-5 h-5" style={{ color: card.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">{card.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        •••• {card.last_digits}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       {/* FAB for adding expense/income */}
@@ -687,6 +710,16 @@ export default function Dashboard() {
       <AddContributionDialog
         open={showContributionDialog}
         onOpenChange={setShowContributionDialog}
+        onSuccess={handleContributionSuccess}
+      />
+
+      {/* Edit Contribution Dialog */}
+      <EditContributionDialog
+        open={showEditContributionDialog}
+        onOpenChange={setShowEditContributionDialog}
+        contribution={selectedContribution}
+        onUpdate={updateContribution}
+        onDelete={deleteContribution}
         onSuccess={handleContributionSuccess}
       />
     </div>

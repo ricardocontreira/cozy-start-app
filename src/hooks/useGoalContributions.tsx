@@ -90,6 +90,33 @@ export function useGoalContributions(houseId: string | null) {
     }
   };
 
+  const updateContribution = async (
+    contributionId: string,
+    data: Partial<ContributionFormData>
+  ): Promise<boolean> => {
+    try {
+      const updateData: any = { ...data };
+      if (data.contribution_date) {
+        updateData.contribution_date = data.contribution_date.toISOString().split("T")[0];
+      }
+
+      const { error } = await supabase
+        .from("goal_contributions")
+        .update(updateData)
+        .eq("id", contributionId);
+
+      if (error) throw error;
+
+      toast.success("Aporte atualizado com sucesso!");
+      await fetchContributions();
+      return true;
+    } catch (error: any) {
+      console.error("Error updating contribution:", error);
+      toast.error("Erro ao atualizar aporte");
+      return false;
+    }
+  };
+
   const deleteContribution = async (contributionId: string): Promise<boolean> => {
     try {
       const { error } = await supabase
@@ -149,6 +176,7 @@ export function useGoalContributions(houseId: string | null) {
     contributions,
     loading,
     createContribution,
+    updateContribution,
     deleteContribution,
     getContributionsByGoal,
     getTotalByGoal,
