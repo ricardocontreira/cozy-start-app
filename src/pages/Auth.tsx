@@ -41,7 +41,8 @@ export default function Auth() {
   const context = searchParams.get("context");
   const isPlannerContext = context === "planner";
   
-  const [isLogin, setIsLogin] = useState(mode !== "signup");
+  // Force login mode for planner context - no public signup allowed
+  const [isLogin, setIsLogin] = useState(mode !== "signup" || isPlannerContext);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -138,7 +139,7 @@ export default function Auth() {
               </CardTitle>
               <CardDescription className="text-muted-foreground">
                 {isPlannerContext
-                  ? (isLogin ? "Entre para gerenciar seus clientes" : "Cadastre-se como Planejador Financeiro")
+                  ? "Acesso restrito a planejadores cadastrados"
                   : (isLogin ? "Entre para gerenciar suas finanças" : "Comece a controlar seu dinheiro hoje")}
               </CardDescription>
             </CardHeader>
@@ -317,19 +318,27 @@ export default function Auth() {
                 </form>
               )}
 
-              <div className="mt-6 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    loginForm.reset();
-                    signupForm.reset();
-                  }}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre"}
-                </button>
-              </div>
+              {!isPlannerContext && (
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      loginForm.reset();
+                      signupForm.reset();
+                    }}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre"}
+                  </button>
+                </div>
+              )}
+
+              {isPlannerContext && (
+                <p className="mt-6 text-xs text-center text-muted-foreground">
+                  Contas de planejador são criadas pelo administrador do sistema.
+                </p>
+              )}
             </CardContent>
           </Card>
 
