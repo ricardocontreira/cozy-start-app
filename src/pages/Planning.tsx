@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,19 +6,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { AddGoalDialog } from "@/components/AddGoalDialog";
+import { EditGoalDialog } from "@/components/EditGoalDialog";
 import { GoalCard } from "@/components/GoalCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
-import { useFinancialGoals, GoalFormData } from "@/hooks/useFinancialGoals";
-import { useState } from "react";
+import { useFinancialGoals, FinancialGoal, GoalFormData } from "@/hooks/useFinancialGoals";
 
 export default function Planning() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { currentHouse, memberRole, loading: houseLoading } = useHouse();
-  const { goals, loading: goalsLoading, createGoal, deleteGoal, calculateProgress } = useFinancialGoals(currentHouse?.id || null);
+  const { goals, loading: goalsLoading, createGoal, updateGoal, deleteGoal, calculateProgress } = useFinancialGoals(currentHouse?.id || null);
   
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
 
   const isOwner = memberRole === "owner";
   const isLoading = authLoading || houseLoading || goalsLoading;
@@ -38,6 +40,15 @@ export default function Planning() {
   const handleCreateGoal = async (data: GoalFormData) => {
     if (!user) return false;
     return await createGoal(data, user.id);
+  };
+
+  const handleEditGoal = (goal: FinancialGoal) => {
+    setSelectedGoal(goal);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateGoal = async (goalId: string, data: Partial<GoalFormData>) => {
+    return await updateGoal(goalId, data);
   };
 
   if (isLoading) {
@@ -108,6 +119,7 @@ export default function Planning() {
                 goal={goal}
                 progress={calculateProgress(goal)}
                 onDelete={deleteGoal}
+                onEdit={handleEditGoal}
                 isOwner={isOwner}
               />
             ))}
@@ -121,6 +133,16 @@ export default function Planning() {
         onOpenChange={setDialogOpen}
         onSubmit={handleCreateGoal}
       />
+
+      {/* Edit Goal Dialog */}
+      {selectedGoal && (
+        <EditGoalDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          goal={selectedGoal}
+          onSubmit={handleUpdateGoal}
+        />
+      )}
 
       {/* Mobile Navigation */}
       <MobileBottomNav activeRoute="planning" />
