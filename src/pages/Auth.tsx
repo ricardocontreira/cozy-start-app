@@ -22,6 +22,8 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("E-mail inválido"),
+  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos").max(15, "Telefone inválido").regex(/^[0-9]+$/, "Apenas números"),
+  birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -49,7 +51,7 @@ export default function Auth() {
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { fullName: "", email: "", phone: "", birthDate: "", password: "", confirmPassword: "" },
   });
 
   const handleLogin = async (data: LoginFormData) => {
@@ -73,7 +75,7 @@ export default function Auth() {
 
   const handleSignup = async (data: SignupFormData) => {
     setLoading(true);
-    const { error } = await signUp(data.email, data.password, data.fullName);
+    const { error } = await signUp(data.email, data.password, data.fullName, data.phone, data.birthDate);
     setLoading(false);
 
     if (error) {
@@ -204,6 +206,37 @@ export default function Auth() {
                     {signupForm.formState.errors.email && (
                       <p className="text-sm text-destructive">
                         {signupForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="11999999999"
+                      {...signupForm.register("phone")}
+                      className="h-11"
+                    />
+                    {signupForm.formState.errors.phone && (
+                      <p className="text-sm text-destructive">
+                        {signupForm.formState.errors.phone.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="birthDate">Data de nascimento</Label>
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      {...signupForm.register("birthDate")}
+                      className="h-11"
+                    />
+                    {signupForm.formState.errors.birthDate && (
+                      <p className="text-sm text-destructive">
+                        {signupForm.formState.errors.birthDate.message}
                       </p>
                     )}
                   </div>
