@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Brain, Sparkles, Upload, Users, Check, Shield, Zap, ChevronRight, TrendingUp, Clock } from "lucide-react";
+import { Brain, Sparkles, Upload, Users, Check, Shield, Zap, ChevronRight, TrendingUp, Clock, Target } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,11 +31,18 @@ const aiFeatures = [
     description:
       "Tudo funciona em sincronia para todos os membros da 'Casa'. Adicione familiares e compartilhem o controle financeiro.",
   },
+  {
+    icon: Target,
+    title: "Planejamento de Metas",
+    description:
+      "Defina seus objetivos, estabeleça um capital inicial e um prazo. O FinLar calcula automaticamente o aporte mensal necessário para você realizar seus sonhos.",
+  },
 ];
 
 const benefits = [
   "IA que categoriza gastos",
   "Aprendizado de categorias personalizado",
+  "Planejamento de metas financeiras",
   "Membros ilimitados",
   "Projeções de parcelamentos",
   "Suporte a múltiplos cartões",
@@ -109,9 +116,12 @@ const Landing = () => {
             <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
               Você no controle das suas finanças
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
               Gerencie as finanças da sua casa de forma inteligente. Com IA que aprende seus hábitos e categoriza gastos
               automaticamente.
+            </p>
+            <p className="text-base text-primary font-medium mb-8 max-w-2xl mx-auto">
+              🎯 Saia do escuro e planeje sua reserva de emergência, a compra de um carro ou a viagem dos sonhos com cálculos precisos.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="text-base">
@@ -151,12 +161,16 @@ const Landing = () => {
       <section className="py-12 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 bg-success/10 text-success px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Clock className="w-4 h-4" />
+              Todas as funcionalidades inclusas nos 7 dias grátis
+            </div>
             <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">Inteligência que Aprende com Você</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Nossa IA trabalha para você, categorizando gastos e aprendendo seus padrões financeiros.
+              Nossa IA trabalha para você, categorizando gastos, aprendendo seus padrões financeiros e ajudando você a planejar suas metas.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
             {aiFeatures.map((feature, index) => (
               <Card key={index} className="bg-card border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="pb-2">
