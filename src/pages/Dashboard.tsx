@@ -626,7 +626,7 @@ export default function Dashboard() {
                   return (
                     <button
                       key={goal.id}
-                      onClick={() => navigate("/planning")}
+                      onClick={() => navigate(`/goals/${goal.id}`)}
                       className="w-full flex flex-col gap-2 p-4 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
                     >
                       <div className="flex items-center justify-between">
