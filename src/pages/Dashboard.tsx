@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target } from "lucide-react";
+import { useFinancialGoals } from "@/hooks/useFinancialGoals";
+import { Progress } from "@/components/ui/progress";
 import { SubscriptionDialog } from "@/components/SubscriptionDialog";
 import { MemberAccessBlockedDialog } from "@/components/MemberAccessBlockedDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -65,6 +67,9 @@ export default function Dashboard() {
     },
     enabled: !!currentHouse?.id,
   });
+
+  // Fetch financial goals for the current house
+  const { goals, loading: goalsLoading, calculateProgress } = useFinancialGoals(currentHouse?.id || null);
 
   // Calculate monthly expenses (only type='expense')
   const monthlyExpenses = useMemo(() => {
@@ -459,6 +464,82 @@ export default function Dashboard() {
                     <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </button>
                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Financial Goals Preview */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Metas Financeiras</CardTitle>
+              <CardDescription>Acompanhe seu progresso</CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => navigate("/planning")}
+            >
+              <Target className="w-4 h-4" />
+              Ver todas
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {goalsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16" />
+                <Skeleton className="h-16" />
+              </div>
+            ) : goals.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Target className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhuma meta cadastrada ainda.</p>
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-primary"
+                  onClick={() => navigate("/planning")}
+                >
+                  Criar primeira meta
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {goals.slice(0, 3).map((goal) => {
+                  const progress = calculateProgress(goal);
+                  return (
+                    <button
+                      key={goal.id}
+                      onClick={() => navigate("/planning")}
+                      className="w-full flex flex-col gap-2 p-4 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Target className="w-5 h-5 text-primary" />
+                          </div>
+                          <span className="font-medium text-foreground truncate">{goal.title}</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${
+                          progress.isCompleted ? "text-green-600" : 
+                          progress.isOverdue ? "text-red-600" : "text-primary"
+                        }`}>
+                          {progress.percentage.toFixed(0)}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={progress.percentage} 
+                        className="h-2" 
+                      />
+                    </button>
+                  );
+                })}
+                {goals.length > 3 && (
+                  <p className="text-sm text-center text-muted-foreground pt-2">
+                    +{goals.length - 3} {goals.length - 3 === 1 ? "meta" : "metas"}
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
