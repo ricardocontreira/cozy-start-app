@@ -430,6 +430,86 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Monthly Contributions Preview */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Aportes do Mês</CardTitle>
+              <CardDescription className="capitalize">{selectedPeriodLabel}</CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => setShowContributionDialog(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Novo Aporte
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {monthlyContributions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <PiggyBank className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhum aporte neste mês.</p>
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-primary"
+                  onClick={() => setShowContributionDialog(true)}
+                >
+                  Registrar primeiro aporte
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Total do Mês */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <PiggyBank className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="font-medium">Total do Mês</span>
+                  </div>
+                  <span className="text-xl font-bold text-primary">
+                    {formatCurrency(monthlyContributionsTotal)}
+                  </span>
+                </div>
+
+                {/* Lista de aportes */}
+                {monthlyContributions.slice(0, 3).map((contribution) => (
+                  <button
+                    key={contribution.id}
+                    onClick={() => navigate("/planning")}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                        <Target className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {contribution.goal?.title || "Meta"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {contribution.description} • {format(new Date(contribution.contribution_date), "dd/MM")}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-semibold text-primary shrink-0 ml-2">
+                      {formatCurrency(Number(contribution.amount))}
+                    </span>
+                  </button>
+                ))}
+                {monthlyContributions.length > 3 && (
+                  <p className="text-sm text-center text-muted-foreground pt-2">
+                    +{monthlyContributions.length - 3} {monthlyContributions.length - 3 === 1 ? "aporte" : "aportes"}
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Credit Cards Preview */}
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -563,86 +643,6 @@ export default function Dashboard() {
                 {goals.length > 3 && (
                   <p className="text-sm text-center text-muted-foreground pt-2">
                     +{goals.length - 3} {goals.length - 3 === 1 ? "meta" : "metas"}
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Monthly Contributions Preview */}
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold">Aportes do Mês</CardTitle>
-              <CardDescription className="capitalize">{selectedPeriodLabel}</CardDescription>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={() => setShowContributionDialog(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Novo Aporte
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {monthlyContributions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <PiggyBank className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Nenhum aporte neste mês.</p>
-                <Button 
-                  variant="link" 
-                  className="mt-2 text-primary"
-                  onClick={() => setShowContributionDialog(true)}
-                >
-                  Registrar primeiro aporte
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Total do Mês */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <PiggyBank className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-medium">Total do Mês</span>
-                  </div>
-                  <span className="text-xl font-bold text-primary">
-                    {formatCurrency(monthlyContributionsTotal)}
-                  </span>
-                </div>
-
-                {/* Lista de aportes */}
-                {monthlyContributions.slice(0, 3).map((contribution) => (
-                  <button
-                    key={contribution.id}
-                    onClick={() => navigate("/planning")}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:border-primary/50 hover:shadow-md transition-all text-left group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                        <Target className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate">
-                          {contribution.goal?.title || "Meta"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {contribution.description} • {format(new Date(contribution.contribution_date), "dd/MM")}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-semibold text-primary shrink-0 ml-2">
-                      {formatCurrency(Number(contribution.amount))}
-                    </span>
-                  </button>
-                ))}
-                {monthlyContributions.length > 3 && (
-                  <p className="text-sm text-center text-muted-foreground pt-2">
-                    +{monthlyContributions.length - 3} {monthlyContributions.length - 3 === 1 ? "aporte" : "aportes"}
                   </p>
                 )}
               </div>
