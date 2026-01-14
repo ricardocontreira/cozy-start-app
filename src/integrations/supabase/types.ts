@@ -214,10 +214,15 @@ export type Database = {
           avatar_url: string | null
           birth_date: string | null
           bypass_subscription: boolean
+          cnpj: string | null
           created_at: string
           full_name: string | null
           id: string
+          parent_planner_id: string | null
           phone: string | null
+          planner_onboarding_complete: boolean | null
+          profile_role: Database["public"]["Enums"]["profile_role"]
+          razao_social: string | null
           stripe_customer_id: string | null
           subscription_id: string | null
           subscription_status: string | null
@@ -228,10 +233,15 @@ export type Database = {
           avatar_url?: string | null
           birth_date?: string | null
           bypass_subscription?: boolean
+          cnpj?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          parent_planner_id?: string | null
           phone?: string | null
+          planner_onboarding_complete?: boolean | null
+          profile_role?: Database["public"]["Enums"]["profile_role"]
+          razao_social?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
           subscription_status?: string | null
@@ -242,17 +252,30 @@ export type Database = {
           avatar_url?: string | null
           birth_date?: string | null
           bypass_subscription?: boolean
+          cnpj?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          parent_planner_id?: string | null
           phone?: string | null
+          planner_onboarding_complete?: boolean | null
+          profile_role?: Database["public"]["Enums"]["profile_role"]
+          razao_social?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_parent_planner_id_fkey"
+            columns: ["parent_planner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -413,11 +436,17 @@ export type Database = {
         Args: { _house_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_profile_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["profile_role"]
+      }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       is_house_member: {
         Args: { _house_id: string; _user_id: string }
         Returns: boolean
       }
+      is_planner: { Args: { _user_id: string }; Returns: boolean }
+      is_planner_admin: { Args: { _user_id: string }; Returns: boolean }
       join_house_by_code: { Args: { code: string }; Returns: string }
       regenerate_invite_code: {
         Args: { house_id_param: string }
@@ -427,6 +456,7 @@ export type Database = {
     Enums: {
       app_role: "owner" | "viewer"
       card_brand: "visa" | "mastercard" | "elo"
+      profile_role: "user" | "planner_admin" | "planner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -556,6 +586,7 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "viewer"],
       card_brand: ["visa", "mastercard", "elo"],
+      profile_role: ["user", "planner_admin", "planner"],
     },
   },
 } as const

@@ -19,6 +19,8 @@ import IncomeDetails from "./pages/IncomeDetails";
 import Planning from "./pages/Planning";
 import GoalDetails from "./pages/GoalDetails";
 import Settings from "./pages/Settings";
+import PlannerOnboarding from "./pages/PlannerOnboarding";
+import PlannerTeam from "./pages/PlannerTeam";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
               <Route path="/planning" element={<Planning />} />
               <Route path="/goals/:goalId" element={<GoalDetails />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/planner-onboarding" element={<PlannerOnboarding />} />
+              <Route path="/planner/team" element={<PlannerTeam />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

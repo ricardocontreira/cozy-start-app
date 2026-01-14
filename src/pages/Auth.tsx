@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Briefcase } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Badge } from "@/components/ui/badge";
 
 const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -37,6 +38,9 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
+  const context = searchParams.get("context");
+  const isPlannerContext = context === "planner";
+  
   const [isLogin, setIsLogin] = useState(mode !== "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -69,13 +73,19 @@ export default function Auth() {
         variant: "destructive",
       });
     } else {
-      navigate("/dashboard");
+      // For planner context, redirect to planner onboarding check
+      if (isPlannerContext) {
+        navigate("/planner-onboarding");
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 
   const handleSignup = async (data: SignupFormData) => {
     setLoading(true);
-    const { error } = await signUp(data.email, data.password, data.fullName, data.phone, data.birthDate);
+    const profileRole = isPlannerContext ? "planner_admin" : "user";
+    const { error } = await signUp(data.email, data.password, data.fullName, data.phone, data.birthDate, profileRole);
     setLoading(false);
 
     if (error) {
@@ -90,9 +100,13 @@ export default function Auth() {
     } else {
       toast({
         title: "Conta criada!",
-        description: "Bem-vindo ao FinLar!",
+        description: isPlannerContext ? "Bem-vindo ao FinLar para Planejadores!" : "Bem-vindo ao FinLar!",
       });
-      navigate("/dashboard");
+      if (isPlannerContext) {
+        navigate("/planner-onboarding");
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 
@@ -111,13 +125,21 @@ export default function Auth() {
         <div className="w-full max-w-md animate-fade-in">
           <Card className="border-border/50 shadow-lg">
             <CardHeader className="text-center pb-4">
+              {isPlannerContext && (
+                <Badge variant="secondary" className="w-fit mx-auto mb-3">
+                  <Briefcase className="w-3 h-3 mr-1" />
+                  Para Profissionais
+                </Badge>
+              )}
               <CardTitle className="text-2xl font-bold text-foreground">
-                {isLogin ? "Bem-vindo de volta!" : "Criar sua conta"}
+                {isPlannerContext 
+                  ? (isLogin ? "Acesso do Planejador" : "Cadastro de Planejador")
+                  : (isLogin ? "Bem-vindo de volta!" : "Criar sua conta")}
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                {isLogin
-                  ? "Entre para gerenciar suas finanças"
-                  : "Comece a controlar seu dinheiro hoje"}
+                {isPlannerContext
+                  ? (isLogin ? "Entre para gerenciar seus clientes" : "Cadastre-se como Planejador Financeiro")
+                  : (isLogin ? "Entre para gerenciar suas finanças" : "Comece a controlar seu dinheiro hoje")}
               </CardDescription>
             </CardHeader>
 
