@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Target, Trash2, Calendar, TrendingUp } from "lucide-react";
+import { Target, Trash2, Calendar, TrendingUp, Percent } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ interface GoalCardProps {
     monthsRemaining: number;
     daysRemaining: number;
     monthlyContribution: number;
+    monthlyContributionLinear: number;
+    annualInterestRate: number;
     isCompleted: boolean;
     isOverdue: boolean;
   };
@@ -141,7 +143,7 @@ export function GoalCard({ goal, progress, onDelete, isOwner }: GoalCardProps) {
 
         {/* Remaining */}
         {!progress.isCompleted && (
-          <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+          <div className="p-3 rounded-lg bg-muted/50 space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <TrendingUp className="h-4 w-4 text-primary" />
               <span className="text-muted-foreground">Faltam:</span>
@@ -149,14 +151,29 @@ export function GoalCard({ goal, progress, onDelete, isOwner }: GoalCardProps) {
                 {formatCurrency(progress.remaining)}
               </span>
             </div>
+
+            <div className="flex items-center gap-2 text-sm">
+              <Percent className="h-4 w-4 text-primary" />
+              <span className="text-muted-foreground">Taxa de juros:</span>
+              <span className="font-semibold text-foreground">
+                {progress.annualInterestRate}% a.a.
+              </span>
+            </div>
             
             {progress.monthsRemaining > 0 && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">Aporte mensal necessário:</span>
-                <span className="font-semibold text-primary">
-                  {formatCurrency(progress.monthlyContribution)}
-                </span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">Aporte mensal (c/ juros):</span>
+                  <span className="font-semibold text-primary">
+                    {formatCurrency(progress.monthlyContribution)}
+                  </span>
+                </div>
+                {progress.monthlyContributionLinear > progress.monthlyContribution && (
+                  <p className="text-xs text-muted-foreground pl-6">
+                    Sem juros seria: {formatCurrency(progress.monthlyContributionLinear)}
+                  </p>
+                )}
               </div>
             )}
           </div>

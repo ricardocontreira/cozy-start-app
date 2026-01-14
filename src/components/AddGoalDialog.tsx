@@ -34,6 +34,7 @@ const formSchema = z.object({
   title: z.string().min(2, "O título deve ter pelo menos 2 caracteres"),
   initial_capital: z.coerce.number().min(0, "O capital inicial deve ser maior ou igual a 0"),
   target_amount: z.coerce.number().positive("O valor da meta deve ser maior que 0"),
+  annual_interest_rate: z.coerce.number().min(0, "A taxa deve ser maior ou igual a 0").max(100, "A taxa deve ser menor ou igual a 100"),
   deadline: z.date({
     required_error: "Selecione uma data limite",
   }),
@@ -57,6 +58,7 @@ export function AddGoalDialog({ open, onOpenChange, onSubmit }: AddGoalDialogPro
       title: "",
       initial_capital: 0,
       target_amount: 0,
+      annual_interest_rate: 12,
     },
   });
 
@@ -130,6 +132,28 @@ export function AddGoalDialog({ open, onOpenChange, onSubmit }: AddGoalDialogPro
                       {...field} 
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="annual_interest_rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Taxa de Juros Anual (%)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.1"
+                      placeholder="12" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Taxa esperada de rendimento anual para cálculo do aporte
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
