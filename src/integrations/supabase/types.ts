@@ -218,6 +218,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_active: boolean
           parent_planner_id: string | null
           phone: string | null
           planner_onboarding_complete: boolean | null
@@ -237,6 +238,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_active?: boolean
           parent_planner_id?: string | null
           phone?: string | null
           planner_onboarding_complete?: boolean | null
@@ -256,6 +258,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_active?: boolean
           parent_planner_id?: string | null
           phone?: string | null
           planner_onboarding_complete?: boolean | null

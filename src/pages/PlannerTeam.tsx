@@ -82,16 +82,15 @@ export default function PlannerTeam() {
   }, [user, authLoading, profile, profileLoading, isPlannerAdmin, needsOnboarding, navigate]);
 
   const handleCreatePlanner = async (formData: CreatePlannerFormData) => {
-    const data = {
-      fullName: formData.fullName!,
-      email: formData.email!,
-      password: formData.password!,
-    };
     setSubmitting(true);
-    const { error } = await createPlannerAssistant(data);
+    const success = await createPlannerAssistant(
+      formData.fullName!,
+      formData.email!,
+      formData.password!
+    );
     setSubmitting(false);
 
-    if (!error) {
+    if (success) {
       setDialogOpen(false);
       form.reset();
     }

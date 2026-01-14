@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
+import { usePlannerProfile } from "@/hooks/usePlannerProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,7 @@ const cardColors = [
 export default function Cards() {
   const { user, loading: authLoading } = useAuth();
   const { currentHouse, memberRole, loading: houseLoading } = useHouse();
+  const { isPlanner, loading: plannerLoading } = usePlannerProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -102,6 +104,13 @@ export default function Cards() {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Redirect planners to their own dashboard
+  useEffect(() => {
+    if (!plannerLoading && isPlanner) {
+      navigate("/planner");
+    }
+  }, [isPlanner, plannerLoading, navigate]);
 
   useEffect(() => {
     if (currentHouse) {

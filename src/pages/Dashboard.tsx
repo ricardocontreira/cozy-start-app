@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useHouseTransactions } from "@/hooks/useHouseTransactions";
 import { useSubscription } from "@/hooks/useSubscription";
+import { usePlannerProfile } from "@/hooks/usePlannerProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +52,7 @@ export default function Dashboard() {
     getTrialDaysRemaining,
     startCheckout,
   } = useSubscription();
+  const { isPlanner, loading: plannerLoading } = usePlannerProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -187,11 +189,18 @@ export default function Dashboard() {
     }
   }, [user, authLoading, navigate]);
 
+  // Redirect planners to their own dashboard
   useEffect(() => {
-    if (!houseLoading && user && houses.length === 0) {
+    if (!plannerLoading && isPlanner) {
+      navigate("/planner");
+    }
+  }, [isPlanner, plannerLoading, navigate]);
+
+  useEffect(() => {
+    if (!houseLoading && user && houses.length === 0 && !isPlanner) {
       navigate("/house-setup");
     }
-  }, [houses, houseLoading, user, navigate]);
+  }, [houses, houseLoading, user, isPlanner, navigate]);
 
   // Check for trial expiration and show subscription dialog if no access (owners)
   useEffect(() => {
