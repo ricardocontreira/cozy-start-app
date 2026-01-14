@@ -212,10 +212,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           bypass_subscription: boolean
           created_at: string
           full_name: string | null
           id: string
+          phone: string | null
           stripe_customer_id: string | null
           subscription_id: string | null
           subscription_status: string | null
@@ -224,10 +226,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           bypass_subscription?: boolean
           created_at?: string
           full_name?: string | null
           id: string
+          phone?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
           subscription_status?: string | null
@@ -236,10 +240,12 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           bypass_subscription?: boolean
           created_at?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
           subscription_status?: string | null
