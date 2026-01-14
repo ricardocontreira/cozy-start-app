@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFinancialGoals } from "@/hooks/useFinancialGoals";
 import { useGoalContributions, GoalContribution } from "@/hooks/useGoalContributions";
 import { Progress } from "@/components/ui/progress";
@@ -142,8 +143,29 @@ export default function Dashboard() {
       .reduce((sum, txn) => sum + Number(txn.amount), 0);
   }, [transactions, selectedDate]);
 
-  // Calculate balance (income - expenses)
-  const balance = monthlyIncome - monthlyExpenses;
+  // Saldo disponível (antes dos aportes)
+  const availableBalance = monthlyIncome - monthlyExpenses;
+
+  // Calculate balance (income - expenses - contributions)
+  const balance = monthlyIncome - monthlyExpenses - monthlyContributionsTotal;
+
+  // Calculate required monthly contributions from all active goals
+  const requiredMonthlyContribution = useMemo(() => {
+    if (!goals.length) return 0;
+    
+    return goals.reduce((sum, goal) => {
+      const progress = calculateProgress(goal);
+      // Only non-completed and non-overdue goals
+      if (!progress.isCompleted && !progress.isOverdue) {
+        return sum + progress.monthlyContribution;
+      }
+      return sum;
+    }, 0);
+  }, [goals, calculateProgress]);
+
+  // Check if required contributions exceed available balance
+  const hasInsufficientBalance = requiredMonthlyContribution > availableBalance && availableBalance >= 0;
+  const hasNegativeBalance = availableBalance < 0;
 
   // Format the selected period for display
   const selectedPeriodLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
@@ -384,6 +406,11 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground mt-1 capitalize">
                 {selectedPeriodLabel}
               </p>
+              {monthlyContributionsTotal > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Após aportes de {formatCurrency(monthlyContributionsTotal)}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -441,6 +468,30 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Insufficient Balance Alert */}
+        {(hasInsufficientBalance || hasNegativeBalance) && (
+          <Alert variant="destructive" className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 [&>svg]:text-amber-600">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="text-amber-900 dark:text-amber-100">
+              {hasNegativeBalance ? "Saldo negativo" : "Atenção: Saldo insuficiente para metas"}
+            </AlertTitle>
+            <AlertDescription className="text-amber-800 dark:text-amber-200">
+              {hasNegativeBalance ? (
+                <>
+                  Suas despesas ({formatCurrency(monthlyExpenses)}) excedem suas receitas ({formatCurrency(monthlyIncome)}).
+                  Revise seus gastos para equilibrar seu orçamento.
+                </>
+              ) : (
+                <>
+                  Suas metas exigem aportes de <strong>{formatCurrency(requiredMonthlyContribution)}/mês</strong>, 
+                  mas seu saldo disponível é de <strong>{formatCurrency(availableBalance)}</strong>.
+                  Considere revisar suas metas ou reduzir despesas.
+                </>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Monthly Contributions Preview */}
         <Card className="border-border/50 shadow-sm">
