@@ -16,6 +16,7 @@ import CardDetails from "./pages/CardDetails";
 import CardInvoiceDetails from "./pages/CardInvoiceDetails";
 import ExpenseDetails from "./pages/ExpenseDetails";
 import IncomeDetails from "./pages/IncomeDetails";
+import Planning from "./pages/Planning";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/cards/:cardId/invoice/:month" element={<CardInvoiceDetails />} />
               <Route path="/expense-details" element={<ExpenseDetails />} />
               <Route path="/income-details" element={<IncomeDetails />} />
+              <Route path="/planning" element={<Planning />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

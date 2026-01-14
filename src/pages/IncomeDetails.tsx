@@ -495,7 +495,7 @@ export default function IncomeDetails() {
 
       {/* Mobile Bottom Navigation */}
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav activeRoute="transactions" />
+      <MobileBottomNav activeRoute="dashboard" />
 
       <AddIncomeDialog
         open={dialogOpen}
