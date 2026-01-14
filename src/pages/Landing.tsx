@@ -271,6 +271,15 @@ const Landing = () => {
               <FinLarLogo size="md" />
             </div>
             <p className="text-sm text-muted-foreground">Seu dinheiro, do jeito certo.</p>
+            
+            {/* Link para área do planejador */}
+            <Link 
+              to="/auth?mode=login&context=planner" 
+              className="text-xs text-muted-foreground/70 hover:text-primary transition-colors"
+            >
+              Área do Planejador
+            </Link>
+            
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} FinLar. Todos os direitos reservados.
             </p>
