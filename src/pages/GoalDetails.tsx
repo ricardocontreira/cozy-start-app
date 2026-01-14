@@ -54,6 +54,7 @@ export default function GoalDetails() {
   
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<"all" | "contributed" | "missed" | "current" | "future">("all");
 
   const isOwner = memberRole === "owner";
   
@@ -133,6 +134,11 @@ export default function GoalDetails() {
 
     return { contributed, missed, future, current, total };
   }, [monthlyTimeline]);
+
+  const filteredTimeline = useMemo(() => {
+    if (activeFilter === "all") return monthlyTimeline;
+    return monthlyTimeline.filter(m => m.status === activeFilter);
+  }, [monthlyTimeline, activeFilter]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -221,16 +227,10 @@ export default function GoalDetails() {
               </div>
             </div>
             {isOwner && (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-                <Button size="sm" onClick={() => setShowContributionDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Aporte
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
             )}
           </div>
         </div>
@@ -301,10 +301,16 @@ export default function GoalDetails() {
           </CardContent>
         </Card>
 
-        {/* Monthly Statistics */}
+        {/* Monthly Statistics - Clickable Filters */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
+            <Card 
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md",
+                activeFilter === "contributed" && "ring-2 ring-green-500"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "contributed" ? "all" : "contributed")}
+            >
               <CardContent className="p-4 text-center">
                 <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Check className="h-5 w-5 text-green-600" />
@@ -313,7 +319,13 @@ export default function GoalDetails() {
                 <p className="text-xs text-muted-foreground">Meses com aporte</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card 
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md",
+                activeFilter === "missed" && "ring-2 ring-red-500"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "missed" ? "all" : "missed")}
+            >
               <CardContent className="p-4 text-center">
                 <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-red-500/10 flex items-center justify-center">
                   <X className="h-5 w-5 text-red-500" />
@@ -322,7 +334,13 @@ export default function GoalDetails() {
                 <p className="text-xs text-muted-foreground">Meses sem aporte</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card 
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md",
+                activeFilter === "current" && "ring-2 ring-primary"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "current" ? "all" : "current")}
+            >
               <CardContent className="p-4 text-center">
                 <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
                   <Target className="h-5 w-5 text-primary" />
@@ -331,7 +349,13 @@ export default function GoalDetails() {
                 <p className="text-xs text-muted-foreground">Mês atual</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card 
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md",
+                activeFilter === "future" && "ring-2 ring-muted-foreground"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "future" ? "all" : "future")}
+            >
               <CardContent className="p-4 text-center">
                 <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center">
                   <Clock className="h-5 w-5 text-muted-foreground" />
@@ -346,18 +370,37 @@ export default function GoalDetails() {
         {/* Monthly Timeline */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Histórico Mensal
-            </CardTitle>
-            <CardDescription>
-              Acompanhe seus aportes mês a mês até o prazo da meta
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Histórico Mensal
+                </CardTitle>
+                <CardDescription>
+                  Acompanhe seus aportes mês a mês até o prazo da meta
+                </CardDescription>
+              </div>
+              {activeFilter !== "all" && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setActiveFilter("all")}
+                  className="text-muted-foreground"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpar filtro
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-3">
-                {monthlyTimeline.map((month, index) => (
+                {filteredTimeline.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum mês encontrado com este filtro
+                  </div>
+                ) : filteredTimeline.map((month) => (
                   <div
                     key={month.monthLabel}
                     className={cn(
@@ -441,6 +484,19 @@ export default function GoalDetails() {
           </CardContent>
         </Card>
       </main>
+
+      {/* FAB for adding contributions */}
+      {isOwner && (
+        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
+            onClick={() => setShowContributionDialog(true)}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
 
       {/* Dialogs */}
       <AddContributionDialog
