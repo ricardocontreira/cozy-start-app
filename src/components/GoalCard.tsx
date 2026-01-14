@@ -41,7 +41,7 @@ interface GoalCardProps {
 
 export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCardProps) {
   const navigate = useNavigate();
-  
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -73,12 +73,12 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
             </div>
             <CardTitle className="text-lg">{goal.title}</CardTitle>
           </div>
-          
+
           {isOwner && (
             <div className="flex items-center gap-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => onEdit(goal)}
               >
@@ -99,7 +99,7 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={() => onDelete(goal.id)}
                       className="bg-destructive hover:bg-destructive/90"
                     >
@@ -112,22 +112,17 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Progresso</span>
-            <span className={cn("font-medium", getStatusColor())}>
-              {progress.percentage.toFixed(1)}%
-            </span>
+            <span className={cn("font-medium", getStatusColor())}>{progress.percentage.toFixed(1)}%</span>
           </div>
           <div className="relative">
-            <Progress 
-              value={progress.percentage} 
-              className="h-3"
-            />
-            <div 
+            <Progress value={progress.percentage} className="h-3" />
+            <div
               className={cn("absolute inset-0 h-3 rounded-full transition-all", getProgressColor())}
               style={{ width: `${Math.min(progress.percentage, 100)}%` }}
             />
@@ -138,20 +133,17 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Capital Atual</p>
-            <p className="font-semibold text-foreground">
-              {formatCurrency(progress.currentCapital)}
-            </p>
+            <p className="font-semibold text-foreground">{formatCurrency(progress.currentCapital)}</p>
             {progress.totalContributions > 0 && (
               <p className="text-xs text-muted-foreground">
-                (Inicial: {formatCurrency(goal.initial_capital)} + Aportes: {formatCurrency(progress.totalContributions)})
+                (Inicial: {formatCurrency(goal.initial_capital)} + Aportes:{" "}
+                {formatCurrency(progress.totalContributions)})
               </p>
             )}
           </div>
           <div>
             <p className="text-muted-foreground">Meta</p>
-            <p className="font-semibold text-foreground">
-              {formatCurrency(goal.target_amount)}
-            </p>
+            <p className="font-semibold text-foreground">{formatCurrency(goal.target_amount)}</p>
           </div>
         </div>
 
@@ -161,31 +153,25 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
             <div className="flex items-center gap-2 text-sm">
               <TrendingUp className="h-4 w-4 text-primary" />
               <span className="text-muted-foreground">Faltam:</span>
-              <span className="font-semibold text-foreground">
-                {formatCurrency(progress.remaining)}
-              </span>
+              <span className="font-semibold text-foreground">{formatCurrency(progress.remaining)}</span>
             </div>
 
             <div className="flex items-center gap-2 text-sm">
               <Percent className="h-4 w-4 text-primary" />
               <span className="text-muted-foreground">Taxa de juros:</span>
-              <span className="font-semibold text-foreground">
-                {progress.annualInterestRate}% a.a.
-              </span>
+              <span className="font-semibold text-foreground">{progress.annualInterestRate}% a.a.</span>
             </div>
-            
+
             {progress.monthsRemaining > 0 && (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-primary" />
-                  <span className="text-muted-foreground">Aporte mensal (c/ juros):</span>
-                  <span className="font-semibold text-primary">
-                    {formatCurrency(progress.monthlyContribution)}
-                  </span>
+                  <span className="text-muted-foreground">Aporte mensal (c/ investimento):</span>
+                  <span className="font-semibold text-primary">{formatCurrency(progress.monthlyContribution)}</span>
                 </div>
                 {progress.monthlyContributionLinear > progress.monthlyContribution && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    Sem juros seria: {formatCurrency(progress.monthlyContributionLinear)}
+                    Sem investimento seria: {formatCurrency(progress.monthlyContributionLinear)}
                   </p>
                 )}
               </div>
@@ -203,9 +189,7 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
                 ({progress.monthsRemaining} {progress.monthsRemaining === 1 ? "mês" : "meses"})
               </span>
             )}
-            {progress.isOverdue && (
-              <span className="text-red-600 ml-1">(vencida)</span>
-            )}
+            {progress.isOverdue && <span className="text-red-600 ml-1">(vencida)</span>}
           </span>
         </div>
 
@@ -217,11 +201,7 @@ export function GoalCard({ goal, progress, onDelete, onEdit, isOwner }: GoalCard
         )}
 
         {/* View Details Button */}
-        <Button 
-          variant="outline" 
-          className="w-full gap-2 mt-2"
-          onClick={() => navigate(`/goals/${goal.id}`)}
-        >
+        <Button variant="outline" className="w-full gap-2 mt-2" onClick={() => navigate(`/goals/${goal.id}`)}>
           Ver detalhes
           <ChevronRight className="h-4 w-4" />
         </Button>
