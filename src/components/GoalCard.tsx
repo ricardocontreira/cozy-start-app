@@ -22,7 +22,9 @@ interface GoalCardProps {
   goal: FinancialGoal;
   progress: {
     percentage: number;
+    currentCapital: number;
     remaining: number;
+    totalContributions: number;
     monthsRemaining: number;
     daysRemaining: number;
     monthlyContribution: number;
@@ -121,8 +123,13 @@ export function GoalCard({ goal, progress, onDelete, isOwner }: GoalCardProps) {
           <div>
             <p className="text-muted-foreground">Capital Atual</p>
             <p className="font-semibold text-foreground">
-              {formatCurrency(goal.initial_capital)}
+              {formatCurrency(progress.currentCapital)}
             </p>
+            {progress.totalContributions > 0 && (
+              <p className="text-xs text-muted-foreground">
+                (Inicial: {formatCurrency(goal.initial_capital)} + Aportes: {formatCurrency(progress.totalContributions)})
+              </p>
+            )}
           </div>
           <div>
             <p className="text-muted-foreground">Meta</p>
