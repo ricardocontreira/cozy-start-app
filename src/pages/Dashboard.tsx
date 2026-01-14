@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, AlertTriangle } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFinancialGoals } from "@/hooks/useFinancialGoals";
 import { useGoalContributions, GoalContribution } from "@/hooks/useGoalContributions";
@@ -519,19 +519,6 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Total do Mês */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <PiggyBank className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-medium">Total do Mês</span>
-                  </div>
-                  <span className="text-xl font-bold text-primary">
-                    {formatCurrency(monthlyContributionsTotal)}
-                  </span>
-                </div>
-
                 {/* Lista de aportes */}
                 {monthlyContributions.slice(0, 3).map((contribution) => (
                   <div
@@ -556,14 +543,28 @@ export default function Dashboard() {
                         {formatCurrency(Number(contribution.amount))}
                       </span>
                       {isOwner && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEditContribution(contribution)}
-                        >
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditContribution(contribution)}
+                          >
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={async () => {
+                              await deleteContribution(contribution.id);
+                              refetchContributions();
+                              refetchGoals();
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
