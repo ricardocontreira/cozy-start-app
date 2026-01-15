@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import PlannerOnboarding from "./pages/PlannerOnboarding";
 import PlannerDashboard from "./pages/PlannerDashboard";
 import PlannerSettings from "./pages/PlannerSettings";
+import ClientDetails from "./pages/ClientDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/planner-onboarding" element={<PlannerOnboarding />} />
                 <Route path="/planner" element={<PlannerDashboard />} />
+                <Route path="/planner/client/:clientId" element={<ClientDetails />} />
                 <Route path="/planner/settings" element={<PlannerSettings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
