@@ -83,7 +83,8 @@ export default function ProfileSelection() {
         setActiveRole("user");
         navigate("/dashboard");
       } else {
-        // No roles at all - send to house setup
+        // User without any roles - send to house setup
+        // Note: Pure planners are already handled above, so this is only for regular users
         setActiveRole("user");
         navigate("/house-setup");
       }
