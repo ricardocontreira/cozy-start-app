@@ -48,15 +48,29 @@ export function usePlannerClients() {
     if (!user) return false;
 
     try {
-      // We need to use a service role or RPC for this since RLS won't allow direct update
-      // For now, we'll inform the user this needs admin action
-      toast({
-        title: "Ação não disponível",
-        description: "Contate o suporte para desvincular um cliente.",
-        variant: "destructive",
+      const { data, error } = await supabase.rpc("unlink_planner_client", {
+        client_user_id: clientId,
       });
-      return false;
+
+      if (error) throw error;
+
+      if (data === true) {
+        toast({
+          title: "Cliente desvinculado",
+          description: "O cliente foi removido da sua lista.",
+        });
+        await fetchClients();
+        return true;
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível desvincular o cliente.",
+          variant: "destructive",
+        });
+        return false;
+      }
     } catch (error) {
+      console.error("Error unlinking client:", error);
       toast({
         title: "Erro",
         description: "Não foi possível desvincular o cliente.",
