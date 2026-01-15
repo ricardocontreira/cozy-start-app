@@ -221,3 +221,48 @@ export function getIncomeCategoryStyle(category: string | null) {
     icon: cat.icon,
   };
 }
+
+// Category info with Lucide icons for use in components
+import {
+  Utensils,
+  Car,
+  ShoppingCart,
+  Heart,
+  Gamepad2,
+  GraduationCap,
+  Home,
+  Wrench,
+  Tv,
+  HelpCircle,
+  type LucideIcon,
+} from "lucide-react";
+
+export interface CategoryInfo {
+  label: string;
+  icon: LucideIcon;
+  color: string;
+}
+
+const CATEGORY_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+  "Alimentação": { icon: Utensils, color: "hsl(24, 95%, 53%)" },
+  "Transporte": { icon: Car, color: "hsl(217, 91%, 60%)" },
+  "Compras": { icon: ShoppingCart, color: "hsl(271, 81%, 56%)" },
+  "Saúde": { icon: Heart, color: "hsl(0, 84%, 60%)" },
+  "Lazer": { icon: Gamepad2, color: "hsl(160, 84%, 39%)" },
+  "Educação": { icon: GraduationCap, color: "hsl(199, 89%, 48%)" },
+  "Moradia": { icon: Home, color: "hsl(38, 92%, 50%)" },
+  "Serviços": { icon: Wrench, color: "hsl(142, 76%, 36%)" },
+  "Assinaturas": { icon: Tv, color: "hsl(234, 89%, 74%)" },
+  "Não classificado": { icon: HelpCircle, color: "hsl(215, 16%, 47%)" },
+};
+
+export function getCategoryInfo(category: string | null): CategoryInfo {
+  const cat = getCategoryByValue(category);
+  const iconInfo = CATEGORY_ICONS[cat.value] || CATEGORY_ICONS["Não classificado"];
+  
+  return {
+    label: cat.label,
+    icon: iconInfo.icon,
+    color: iconInfo.color,
+  };
+}
