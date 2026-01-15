@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { LayoutDashboard, Settings, Users } from "lucide-react";
+import { LayoutDashboard, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PlannerBottomNavProps {
-  activeRoute?: "home" | "clients" | "settings";
+  activeRoute?: "home" | "settings";
 }
 
 export function PlannerBottomNav({ activeRoute }: PlannerBottomNavProps) {
@@ -11,7 +11,6 @@ export function PlannerBottomNav({ activeRoute }: PlannerBottomNavProps) {
 
   const navItems = [
     { key: "home", icon: LayoutDashboard, label: "Início", path: "/planner" },
-    { key: "clients", icon: Users, label: "Clientes", path: "/planner/clients" },
     { key: "settings", icon: Settings, label: "Config", path: "/planner/settings" },
   ] as const;
 
