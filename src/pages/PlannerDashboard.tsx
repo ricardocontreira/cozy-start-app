@@ -324,20 +324,20 @@ export default function PlannerDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 md:px-6 space-y-6">
-        {/* Welcome Section - Desktop Only */}
-        <div className="hidden lg:flex items-center justify-between bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-6">
+        {/* Welcome Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-4 sm:p-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">
               Olá, {profile?.full_name?.split(' ')[0] || 'Planejador'}! 👋
             </h2>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {isPlannerAdmin 
                 ? `Gerencie seus ${clients.length} cliente(s) e ${activeTeamMembers.length} membro(s) da equipe`
                 : `Você tem ${clients.length} cliente(s) vinculado(s)`
               }
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <p className="text-sm text-muted-foreground">Convites disponíveis</p>
             <p className="text-2xl font-bold text-primary">
               {inviteStats?.limit === 0 ? "∞" : `${limitInfo.total - limitInfo.used}`}
