@@ -774,10 +774,15 @@ export default function Dashboard() {
           setShowTrialExpiredDialog(open);
         }}
         onSubscribe={() => startCheckout()}
+        onPlannerCodeSuccess={() => {
+          setShowTrialExpiredDialog(false);
+          window.location.reload();
+        }}
         loading={false}
         isInTrial={false}
         trialDaysRemaining={0}
         trialExpired={true}
+        userId={user?.id}
       />
 
       {/* Member Access Blocked Dialog */}
