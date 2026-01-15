@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2, RefreshCw, Settings, Mail,
-  Copy, Link as LinkIcon, Clock, Check, AlertCircle, Loader2
+  Copy, Link as LinkIcon, Clock, Check, AlertCircle, Loader2, ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlannerProfile } from "@/hooks/usePlannerProfile";
@@ -23,6 +23,7 @@ import { AddPlannerDialog } from "@/components/AddPlannerDialog";
 import { EditPlannerDialog } from "@/components/EditPlannerDialog";
 import { EditInviteLimitDialog } from "@/components/EditInviteLimitDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ClientDetailsSheet } from "@/components/ClientDetailsSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,6 +102,8 @@ export default function PlannerDashboard() {
   const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
   const [clientToUnlink, setClientToUnlink] = useState<{ id: string; name: string } | null>(null);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [clientDetailsOpen, setClientDetailsOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const isLoading = authLoading || profileLoading;
 
@@ -211,6 +214,11 @@ export default function PlannerDashboard() {
     setIsUnlinking(false);
     setUnlinkDialogOpen(false);
     setClientToUnlink(null);
+  };
+
+  const handleClientClick = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setClientDetailsOpen(true);
   };
 
   const getTeamStatsDisplay = (stats: InviteStats | undefined, limit: number) => {
@@ -436,15 +444,23 @@ export default function PlannerDashboard() {
                   {clients.map((client) => (
                     <div
                       key={client.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border bg-background"
+                      className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleClientClick(client.id)}
                     >
-                      <div>
-                        <p className="font-medium text-sm">{client.full_name || "Sem nome"}</p>
-                        {client.created_at && (
-                          <p className="text-xs text-muted-foreground">
-                            Desde {format(new Date(client.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                          </p>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                            {getInitials(client.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{client.full_name || "Sem nome"}</p>
+                          {client.created_at && (
+                            <p className="text-xs text-muted-foreground">
+                              Desde {format(new Date(client.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">Em uso</Badge>
@@ -452,11 +468,15 @@ export default function PlannerDashboard() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => handleUnlinkClick(client)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnlinkClick(client);
+                          }}
                           title="Desvincular cliente"
                         >
                           <UserX className="w-3.5 h-3.5" />
                         </Button>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>
                   ))}
@@ -703,6 +723,13 @@ export default function PlannerDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Client Details Sheet */}
+      <ClientDetailsSheet
+        open={clientDetailsOpen}
+        onOpenChange={setClientDetailsOpen}
+        clientId={selectedClientId}
+      />
 
       {/* Mobile Navigation */}
       <PlannerBottomNav activeRoute="home" />

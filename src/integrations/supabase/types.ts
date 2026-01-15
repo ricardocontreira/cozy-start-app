@@ -585,6 +585,16 @@ export type Database = {
     }
     Functions: {
       create_house_with_owner: { Args: { house_name: string }; Returns: string }
+      get_client_email: { Args: { client_id: string }; Returns: string }
+      get_client_financial_goals: {
+        Args: { client_user_id: string }
+        Returns: Json
+      }
+      get_client_house_id: { Args: { client_user_id: string }; Returns: string }
+      get_client_monthly_expenses: {
+        Args: { client_user_id: string; target_month: string }
+        Returns: Json
+      }
       get_house_invite_code: {
         Args: { house_id_param: string }
         Returns: string
