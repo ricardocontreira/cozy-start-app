@@ -20,6 +20,7 @@ const createPlannerSchema = z.object({
   fullName: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  clientInviteLimit: z.coerce.number().min(0, "Limite deve ser maior ou igual a 0").max(100, "Limite máximo é 100"),
 });
 
 type CreatePlannerFormData = z.infer<typeof createPlannerSchema>;
@@ -41,12 +42,13 @@ export function AddPlannerDialog({ open, onOpenChange, onSuccess }: AddPlannerDi
       fullName: "",
       email: "",
       password: "",
+      clientInviteLimit: 5,
     },
   });
 
   const handleSubmit = async (data: CreatePlannerFormData) => {
     setIsSubmitting(true);
-    const success = await createPlannerAssistant(data.fullName, data.email, data.password);
+    const success = await createPlannerAssistant(data.fullName, data.email, data.password, data.clientInviteLimit);
     setIsSubmitting(false);
 
     if (success) {
@@ -129,6 +131,25 @@ export function AddPlannerDialog({ open, onOpenChange, onSuccess }: AddPlannerDi
             {form.formState.errors.password && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.password.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="clientInviteLimit">Limite de Convites</Label>
+            <Input
+              id="clientInviteLimit"
+              type="number"
+              min={0}
+              max={100}
+              {...form.register("clientInviteLimit")}
+            />
+            <p className="text-sm text-muted-foreground">
+              Quantos convites este planejador poderá gerar para clientes
+            </p>
+            {form.formState.errors.clientInviteLimit && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.clientInviteLimit.message}
               </p>
             )}
           </div>
