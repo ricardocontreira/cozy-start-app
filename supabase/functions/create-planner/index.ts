@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { fullName, email, password } = await req.json();
+    const { fullName, email, password, clientInviteLimit } = await req.json();
 
     if (!fullName || !email || !password) {
       return new Response(
@@ -105,6 +105,20 @@ Deno.serve(async (req) => {
     }
 
     const userId = createdUser.id;
+
+    // Update client_invite_limit if provided
+    if (clientInviteLimit !== undefined && clientInviteLimit !== null) {
+      const { error: updateError } = await supabaseAdmin
+        .from("planner_profiles")
+        .update({ client_invite_limit: clientInviteLimit })
+        .eq("id", userId);
+
+      if (updateError) {
+        console.error("Error updating client_invite_limit:", updateError);
+        // Don't fail the request, just log the error
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
