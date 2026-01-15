@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlannerBottomNav } from "@/components/PlannerBottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ChangePasswordCard } from "@/components/ChangePasswordCard";
 
 export default function PlannerSettings() {
   const navigate = useNavigate();
@@ -215,6 +216,9 @@ export default function PlannerSettings() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Change Password */}
+        <ChangePasswordCard />
 
         {/* Switch Profile - Only for users with multiple roles */}
         {hasMultipleRoles && (
