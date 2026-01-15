@@ -11,7 +11,9 @@ interface SubscriptionState {
   cancelling: boolean;
   trialEndsAt: string | null;
   isInTrial: boolean;
-  hasAccess: boolean; // subscribed OR in trial
+  hasAccess: boolean;
+  plannerSponsored: boolean;
+  sponsoringPlannerName: string | null;
 }
 
 export function useSubscription() {
@@ -26,6 +28,8 @@ export function useSubscription() {
     trialEndsAt: null,
     isInTrial: false,
     hasAccess: false,
+    plannerSponsored: false,
+    sponsoringPlannerName: null,
   });
 
   const checkSubscription = useCallback(async () => {
@@ -39,6 +43,8 @@ export function useSubscription() {
         trialEndsAt: null,
         isInTrial: false,
         hasAccess: false,
+        plannerSponsored: false,
+        sponsoringPlannerName: null,
       });
       return;
     }
@@ -56,7 +62,8 @@ export function useSubscription() {
 
       const isSubscribed = data?.subscribed ?? false;
       const isInTrial = data?.is_in_trial ?? false;
-      const hasAccess = isSubscribed || isInTrial;
+      const plannerSponsored = data?.planner_sponsored ?? false;
+      const hasAccess = isSubscribed || isInTrial || plannerSponsored;
 
       setState(prev => ({
         ...prev,
@@ -67,6 +74,8 @@ export function useSubscription() {
         trialEndsAt: data?.trial_ends_at ?? null,
         isInTrial,
         hasAccess,
+        plannerSponsored,
+        sponsoringPlannerName: data?.sponsoring_planner_name ?? null,
       }));
     } catch (error) {
       console.error("Error checking subscription:", error);

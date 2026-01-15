@@ -28,6 +28,7 @@ const signupSchema = z.object({
   birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string(),
+  inviteCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não conferem",
   path: ["confirmPassword"],
@@ -43,6 +44,12 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(mode !== "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [inviteValidation, setInviteValidation] = useState<{
+    valid: boolean;
+    plannerName?: string;
+    plannerId?: string;
+    checking: boolean;
+  }>({ valid: false, checking: false });
   const { signIn, signUp, user, loading: authLoading } = useAuth();
   const { clearActiveRole, setActiveRole } = useActiveRole();
   const navigate = useNavigate();
@@ -55,8 +62,54 @@ export default function Auth() {
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { fullName: "", email: "", phone: "", birthDate: "", password: "", confirmPassword: "" },
+    defaultValues: { fullName: "", email: "", phone: "", birthDate: "", password: "", confirmPassword: "", inviteCode: "" },
   });
+
+  const inviteCodeValue = signupForm.watch("inviteCode");
+
+  // Validate invite code with debounce
+  useEffect(() => {
+    const validateInviteCode = async (code: string) => {
+      if (!code || code.length < 8) {
+        setInviteValidation({ valid: false, checking: false });
+        return;
+      }
+
+      setInviteValidation(prev => ({ ...prev, checking: true }));
+
+      try {
+        const { data, error } = await supabase.rpc("validate_invite_code", { code });
+        
+        if (error) throw error;
+
+        const result = data as unknown as { valid: boolean; planner_name?: string; planner_id?: string };
+        
+        if (result?.valid) {
+          setInviteValidation({
+            valid: true,
+            plannerName: result.planner_name,
+            plannerId: result.planner_id,
+            checking: false,
+          });
+        } else {
+          setInviteValidation({ valid: false, checking: false });
+        }
+      } catch (error) {
+        console.error("Error validating invite code:", error);
+        setInviteValidation({ valid: false, checking: false });
+      }
+    };
+
+    const timer = setTimeout(() => {
+      if (inviteCodeValue) {
+        validateInviteCode(inviteCodeValue);
+      } else {
+        setInviteValidation({ valid: false, checking: false });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [inviteCodeValue]);
 
   // Redirect if already logged in as normal user
   useEffect(() => {
@@ -175,14 +228,27 @@ export default function Auth() {
       return;
     }
 
-    toast({
-      title: "Conta criada!",
-      description: "Bem-vindo ao FinLar!",
-    });
-
     // Get current session
     const { data: { session } } = await supabase.auth.getSession();
     
+    // If we have a valid invite code, use it to link the user to the planner
+    if (session?.user && inviteValidation.valid && data.inviteCode) {
+      try {
+        await supabase.rpc("use_planner_invite", {
+          code: data.inviteCode,
+          client_user_id: session.user.id,
+        });
+        toast({
+          title: "Conta criada!",
+          description: `Bem-vindo! Você está vinculado ao planejador ${inviteValidation.plannerName}.`,
+        });
+      } catch {
+        toast({ title: "Conta criada!", description: "Bem-vindo ao FinLar!" });
+      }
+    } else {
+      toast({ title: "Conta criada!", description: "Bem-vindo ao FinLar!" });
+    }
+
     if (session?.user) {
       await handlePostAuth(session.user.id);
     }
@@ -371,6 +437,31 @@ export default function Auth() {
                       <p className="text-sm text-destructive">
                         {signupForm.formState.errors.confirmPassword.message}
                       </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="inviteCode">Código de convite (opcional)</Label>
+                    <Input
+                      id="inviteCode"
+                      type="text"
+                      placeholder="ABC123XY"
+                      {...signupForm.register("inviteCode")}
+                      className="h-11 uppercase"
+                      maxLength={8}
+                    />
+                    {inviteValidation.checking && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Validando...
+                      </p>
+                    )}
+                    {inviteValidation.valid && inviteValidation.plannerName && (
+                      <p className="text-sm text-primary">
+                        ✓ Convite do planejador: {inviteValidation.plannerName}
+                      </p>
+                    )}
+                    {inviteCodeValue && inviteCodeValue.length >= 8 && !inviteValidation.valid && !inviteValidation.checking && (
+                      <p className="text-sm text-destructive">Código inválido ou expirado</p>
                     )}
                   </div>
 
