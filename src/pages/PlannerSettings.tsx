@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Building2, LogOut, Mail, Copy, Check } from "lucide-react";
+import { ArrowLeft, Save, Building2, LogOut, Mail, Copy, Check, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlannerProfile } from "@/hooks/usePlannerProfile";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { useProfileRoles } from "@/hooks/useProfileRoles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +18,10 @@ export default function PlannerSettings() {
   const navigate = useNavigate();
   const { user, signOut, loading: authLoading } = useAuth();
   const { profile, isPlannerAdmin, isPlanner, loading: profileLoading, refreshProfile } = usePlannerProfile();
+  const { clearActiveRole } = useActiveRole();
+  const { hasMultipleRoles } = useProfileRoles();
+  const { toast } = useToast();
+  const { profile, isPlannerAdmin, isPlanner, loading: profileLoading, refreshProfile } = usePlannerProfile();
   const { toast } = useToast();
 
   const [razaoSocial, setRazaoSocial] = useState("");
@@ -28,7 +34,7 @@ export default function PlannerSettings() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth?context=planner");
+      navigate("/planner/auth");
     }
   }, [user, authLoading, navigate]);
 
@@ -46,8 +52,14 @@ export default function PlannerSettings() {
   }, [profile]);
 
   const handleSignOut = async () => {
+    clearActiveRole();
     await signOut();
-    navigate("/auth?context=planner");
+    navigate("/planner/auth");
+  };
+
+  const handleSwitchProfile = () => {
+    clearActiveRole();
+    navigate("/profile-selection");
   };
 
   const handleSave = async () => {

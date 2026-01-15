@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2 } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlannerProfile } from "@/hooks/usePlannerProfile";
 import { usePlannerTeam, TeamMember } from "@/hooks/usePlannerTeam";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { useProfileRoles } from "@/hooks/useProfileRoles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +28,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +38,8 @@ export default function PlannerDashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
   const { profile, isPlannerAdmin, isPlanner, needsOnboarding, loading: profileLoading } = usePlannerProfile();
   const { teamMembers, loading: teamLoading, removePlannerAssistant, togglePlannerStatus, refreshTeam } = usePlannerTeam();
+  const { activeRole, clearActiveRole } = useActiveRole();
+  const { hasMultipleRoles, loading: rolesLoading } = useProfileRoles();
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -49,9 +54,16 @@ export default function PlannerDashboard() {
   // Redirect non-authenticated users
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth?context=planner");
+      navigate("/planner/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Redirect if activeRole is 'user'
+  useEffect(() => {
+    if (!rolesLoading && activeRole === "user") {
+      navigate("/dashboard");
+    }
+  }, [activeRole, rolesLoading, navigate]);
 
   // Redirect non-planners to dashboard
   useEffect(() => {
@@ -68,8 +80,14 @@ export default function PlannerDashboard() {
   }, [needsOnboarding, profileLoading, navigate]);
 
   const handleSignOut = async () => {
+    clearActiveRole();
     await signOut();
-    navigate("/auth?context=planner");
+    navigate("/planner/auth");
+  };
+
+  const handleSwitchProfile = () => {
+    clearActiveRole();
+    navigate("/profile-selection");
   };
 
   const handleEditPlanner = (planner: TeamMember) => {
@@ -154,6 +172,15 @@ export default function PlannerDashboard() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {hasMultipleRoles && (
+                    <>
+                      <DropdownMenuItem onClick={handleSwitchProfile}>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Trocar Perfil
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Sair

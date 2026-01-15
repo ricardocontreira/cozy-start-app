@@ -5,9 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import PlannerAuth from "./pages/PlannerAuth";
+import ProfileSelection from "./pages/ProfileSelection";
 import Landing from "./pages/Landing";
 import HouseSetup from "./pages/HouseSetup";
 import Dashboard from "./pages/Dashboard";
@@ -33,28 +36,31 @@ const App = () => (
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/house-setup" element={<HouseSetup />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/cards" element={<Cards />} />
-              <Route path="/cards/:cardId" element={<CardDetails />} />
-              <Route path="/cards/:cardId/invoice/:month" element={<CardInvoiceDetails />} />
-              <Route path="/expense-details" element={<ExpenseDetails />} />
-              <Route path="/income-details" element={<IncomeDetails />} />
-              <Route path="/planning" element={<Planning />} />
-              <Route path="/goals/:goalId" element={<GoalDetails />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/planner-onboarding" element={<PlannerOnboarding />} />
-              <Route path="/planner" element={<PlannerDashboard />} />
-              <Route path="/planner/team" element={<PlannerTeam />} />
-              <Route path="/planner/settings" element={<PlannerSettings />} />
-              <Route path="*" element={<NotFound />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <ActiveRoleProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/planner/auth" element={<PlannerAuth />} />
+                <Route path="/profile-selection" element={<ProfileSelection />} />
+                <Route path="/house-setup" element={<HouseSetup />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/cards" element={<Cards />} />
+                <Route path="/cards/:cardId" element={<CardDetails />} />
+                <Route path="/cards/:cardId/invoice/:month" element={<CardInvoiceDetails />} />
+                <Route path="/expense-details" element={<ExpenseDetails />} />
+                <Route path="/income-details" element={<IncomeDetails />} />
+                <Route path="/planning" element={<Planning />} />
+                <Route path="/goals/:goalId" element={<GoalDetails />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/planner-onboarding" element={<PlannerOnboarding />} />
+                <Route path="/planner" element={<PlannerDashboard />} />
+                <Route path="/planner/team" element={<PlannerTeam />} />
+                <Route path="/planner/settings" element={<PlannerSettings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ActiveRoleProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
