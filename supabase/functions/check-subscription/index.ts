@@ -66,9 +66,9 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Fetch trial_ends_at and bypass_subscription from profile
+    // Fetch trial_ends_at and bypass_subscription from user_profiles
     const { data: profile } = await supabaseClient
-      .from("profiles")
+      .from("user_profiles")
       .select("trial_ends_at, bypass_subscription")
       .eq("id", user.id)
       .single();
@@ -102,7 +102,7 @@ serve(async (req) => {
       logStep("No customer found, checking trial status");
       
       await supabaseClient
-        .from("profiles")
+        .from("user_profiles")
         .update({ subscription_status: "inactive" })
         .eq("id", user.id);
 
@@ -144,7 +144,7 @@ serve(async (req) => {
 
       const status = cancelAtPeriodEnd ? "cancelling" : "active";
       await supabaseClient
-        .from("profiles")
+        .from("user_profiles")
         .update({
           subscription_status: status,
           stripe_customer_id: customerId,
@@ -155,7 +155,7 @@ serve(async (req) => {
       logStep("No active subscription found");
       
       await supabaseClient
-        .from("profiles")
+        .from("user_profiles")
         .update({ subscription_status: "inactive" })
         .eq("id", user.id);
     }

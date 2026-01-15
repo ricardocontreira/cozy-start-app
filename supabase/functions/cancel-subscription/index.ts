@@ -75,9 +75,9 @@ serve(async (req) => {
       currentPeriodEnd: updatedSubscription.current_period_end
     });
 
-    // Update profile to reflect cancellation scheduled
+    // Update user_profiles to reflect cancellation scheduled
     await supabaseClient
-      .from("profiles")
+      .from("user_profiles")
       .update({
         subscription_status: "cancelling",
       })

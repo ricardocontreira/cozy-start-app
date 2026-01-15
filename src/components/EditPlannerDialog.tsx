@@ -55,7 +55,7 @@ export function EditPlannerDialog({ open, onOpenChange, planner, onSuccess }: Ed
     
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from("planner_profiles")
         .update({ full_name: data.fullName.trim() })
         .eq("id", planner.id);
 

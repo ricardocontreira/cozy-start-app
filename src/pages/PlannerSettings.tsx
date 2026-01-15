@@ -73,7 +73,7 @@ export default function PlannerSettings() {
     setSaving(true);
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from("planner_profiles")
         .update({
           razao_social: razaoSocial.trim(),
           cnpj: cnpj.trim() || null,

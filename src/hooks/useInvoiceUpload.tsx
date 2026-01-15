@@ -69,10 +69,10 @@ export function useInvoiceUpload({ cardId, houseId }: UseInvoiceUploadOptions) {
 
       if (error) throw error;
       
-      // Fetch profile names for each upload
+      // Fetch profile names for each upload from user_profiles
       const userIds = [...new Set((data || []).map(log => log.user_id))];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("user_profiles")
         .select("id, full_name")
         .in("id", userIds);
       

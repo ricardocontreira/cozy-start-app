@@ -36,20 +36,20 @@ export default function PlannerOnboarding() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth?context=planner");
+      navigate("/planner/auth");
       return;
     }
 
     if (!profileLoading && profile) {
-      // If not a planner admin, redirect to dashboard
+      // If not a planner admin, redirect to planner dashboard
       if (!isPlannerAdmin) {
-        navigate("/dashboard");
+        navigate("/planner");
         return;
       }
 
-      // If already completed onboarding, redirect to dashboard
+      // If already completed onboarding, redirect to planner dashboard
       if (!needsOnboarding) {
-        navigate("/dashboard");
+        navigate("/planner");
         return;
       }
     }
@@ -64,7 +64,7 @@ export default function PlannerOnboarding() {
     setSubmitting(false);
 
     if (!error) {
-      navigate("/dashboard");
+      navigate("/planner");
     }
   };
 
