@@ -6,11 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 export interface TeamMember {
   id: string;
   full_name: string | null;
-  profile_role: "user" | "planner_admin" | "planner";
+  planner_role: "planner_admin" | "planner";
   cnpj: string | null;
   razao_social: string | null;
   parent_planner_id: string | null;
-  planner_onboarding_complete: boolean | null;
+  onboarding_complete: boolean;
   is_active: boolean;
 }
 
@@ -31,8 +31,8 @@ export function usePlannerTeam() {
 
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, profile_role, cnpj, razao_social, parent_planner_id, planner_onboarding_complete, is_active")
+        .from("planner_profiles")
+        .select("id, full_name, planner_role, cnpj, razao_social, parent_planner_id, onboarding_complete, is_active")
         .eq("parent_planner_id", user.id);
 
       if (error) throw error;
@@ -97,10 +97,10 @@ export function usePlannerTeam() {
     if (!user) return false;
 
     try {
-      // Remove the parent_planner_id link (we don't delete the user)
+      // Remove the parent_planner_id link
       const { error } = await supabase
-        .from("profiles")
-        .update({ parent_planner_id: null, profile_role: "user" })
+        .from("planner_profiles")
+        .update({ parent_planner_id: null })
         .eq("id", plannerId)
         .eq("parent_planner_id", user.id);
 
@@ -128,7 +128,7 @@ export function usePlannerTeam() {
 
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from("planner_profiles")
         .update({ is_active: isActive })
         .eq("id", plannerId)
         .eq("parent_planner_id", user.id);

@@ -209,6 +209,53 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_profiles: {
+        Row: {
+          cnpj: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          onboarding_complete: boolean | null
+          parent_planner_id: string | null
+          planner_role: string
+          razao_social: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          is_active?: boolean | null
+          onboarding_complete?: boolean | null
+          parent_planner_id?: string | null
+          planner_role?: string
+          razao_social?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          onboarding_complete?: boolean | null
+          parent_planner_id?: string | null
+          planner_role?: string
+          razao_social?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_profiles_parent_planner_id_fkey"
+            columns: ["parent_planner_id"]
+            isOneToOne: false
+            referencedRelation: "planner_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -407,6 +454,51 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          birth_date: string | null
+          bypass_subscription: boolean | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          stripe_customer_id: string | null
+          subscription_id: string | null
+          subscription_status: string | null
+          trial_ends_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          birth_date?: string | null
+          bypass_subscription?: boolean | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          birth_date?: string | null
+          bypass_subscription?: boolean | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -439,6 +531,7 @@ export type Database = {
         Args: { _house_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_planner_role: { Args: { _user_id: string }; Returns: string }
       get_profile_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["profile_role"]
@@ -448,8 +541,10 @@ export type Database = {
         Args: { _house_id: string; _user_id: string }
         Returns: boolean
       }
+      is_normal_user: { Args: { _user_id: string }; Returns: boolean }
       is_planner: { Args: { _user_id: string }; Returns: boolean }
       is_planner_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_planner_user: { Args: { _user_id: string }; Returns: boolean }
       join_house_by_code: { Args: { code: string }; Returns: string }
       regenerate_invite_code: {
         Args: { house_id_param: string }

@@ -58,75 +58,74 @@ export default function Auth() {
     defaultValues: { fullName: "", email: "", phone: "", birthDate: "", password: "", confirmPassword: "" },
   });
 
-  // Redirect if already logged in
+  // Redirect if already logged in as normal user
   useEffect(() => {
     const checkExistingSession = async () => {
       if (!authLoading && user) {
-        // Check profile and house membership
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("profile_role")
+        // Check if user exists in user_profiles table
+        const { data: userProfile } = await supabase
+          .from("user_profiles")
+          .select("id")
           .eq("id", user.id)
           .single();
 
-        const { count: houseCount } = await supabase
-          .from("house_members")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id);
+        if (userProfile) {
+          // User is a normal user - check house membership
+          const { count: houseCount } = await supabase
+            .from("house_members")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id);
 
-        const isPlannerType = ["planner_admin", "planner"].includes(profile?.profile_role || "");
-        const hasHouse = (houseCount || 0) > 0;
-
-        if (isPlannerType && hasHouse) {
-          navigate("/profile-selection");
-        } else if (isPlannerType) {
-          navigate("/planner");
-        } else if (hasHouse) {
-          navigate("/dashboard");
-        } else {
-          navigate("/house-setup");
+          setActiveRole("user");
+          if ((houseCount || 0) > 0) {
+            navigate("/dashboard");
+          } else {
+            navigate("/house-setup");
+          }
         }
+        // If no user profile, user might be a planner trying to access user area
+        // Don't redirect - let them login or signup
       }
     };
 
     checkExistingSession();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, setActiveRole]);
 
   const handlePostAuth = async (userId: string) => {
     // Clear any previous role
     clearActiveRole();
 
-    // Fetch user's profile and house membership
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("profile_role")
+    // Check if user exists in user_profiles
+    const { data: userProfile } = await supabase
+      .from("user_profiles")
+      .select("id")
       .eq("id", userId)
       .single();
 
+    if (!userProfile) {
+      // User doesn't exist in user_profiles - this means:
+      // 1. They're a planner trying to login as user (error)
+      // 2. Something went wrong with signup
+      toast({
+        title: "Conta não encontrada",
+        description: "Esta conta não é uma conta de usuário. Se você é um planejador, acesse pela área de planejadores.",
+        variant: "destructive",
+      });
+      await supabase.auth.signOut();
+      return;
+    }
+
+    // Check house membership
     const { count: houseCount } = await supabase
       .from("house_members")
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId);
 
-    const profileRole = profile?.profile_role || "user";
-    const isPlannerType = ["planner_admin", "planner"].includes(profileRole);
-    const hasHouse = (houseCount || 0) > 0;
+    setActiveRole("user");
 
-    // Decide redirect based on capabilities
-    if (isPlannerType && hasHouse) {
-      // Multiple roles - go to selection
-      navigate("/profile-selection");
-    } else if (isPlannerType) {
-      // Only planner - set role and go to planner
-      setActiveRole(profileRole as "planner_admin" | "planner");
-      navigate("/planner");
-    } else if (hasHouse) {
-      // Only user with house
-      setActiveRole("user");
+    if ((houseCount || 0) > 0) {
       navigate("/dashboard");
     } else {
-      // New user without house
-      setActiveRole("user");
       navigate("/house-setup");
     }
   };
@@ -160,6 +159,7 @@ export default function Auth() {
 
   const handleSignup = async (data: SignupFormData) => {
     setLoading(true);
+    // Always signup as "user" in this route
     const { error } = await signUp(data.email, data.password, data.fullName, data.phone, data.birthDate, "user");
     
     if (error) {

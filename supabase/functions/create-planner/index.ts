@@ -40,14 +40,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is planner_admin
-    const { data: profile, error: profileError } = await supabaseUser
-      .from("profiles")
-      .select("profile_role")
+    // Check if user is planner_admin using planner_profiles table
+    const { data: plannerProfile, error: profileError } = await supabaseUser
+      .from("planner_profiles")
+      .select("planner_role")
       .eq("id", user.id)
       .single();
 
-    if (profileError || profile?.profile_role !== "planner_admin") {
+    if (profileError || plannerProfile?.planner_role !== "planner_admin") {
       return new Response(
         JSON.stringify({ error: "Apenas administradores de planejamento podem criar planejadores" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }

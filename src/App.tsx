@@ -10,7 +10,6 @@ import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import PlannerAuth from "./pages/PlannerAuth";
-import ProfileSelection from "./pages/ProfileSelection";
 import Landing from "./pages/Landing";
 import HouseSetup from "./pages/HouseSetup";
 import Dashboard from "./pages/Dashboard";
@@ -43,7 +42,6 @@ const App = () => (
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/planner/auth" element={<PlannerAuth />} />
-                <Route path="/profile-selection" element={<ProfileSelection />} />
                 <Route path="/house-setup" element={<HouseSetup />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/cards" element={<Cards />} />

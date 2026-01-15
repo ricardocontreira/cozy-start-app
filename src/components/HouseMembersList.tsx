@@ -55,7 +55,7 @@ export function HouseMembersList({ houseId, isOwner, currentUserId }: HouseMembe
       
       for (const member of membersData || []) {
         const { data: profileData } = await supabase
-          .from("profiles")
+          .from("user_profiles")
           .select("full_name")
           .eq("id", member.user_id)
           .maybeSingle();

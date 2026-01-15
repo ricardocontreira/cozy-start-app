@@ -47,33 +47,25 @@ export default function PlannerAuth() {
   useEffect(() => {
     const checkExistingSession = async () => {
       if (!loading && user) {
-        // Check if current user is a planner
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("profile_role, planner_onboarding_complete")
+        // Check if user exists in planner_profiles table
+        const { data: plannerProfile } = await supabase
+          .from("planner_profiles")
+          .select("planner_role, onboarding_complete")
           .eq("id", user.id)
           .single();
 
-        if (profile && ["planner_admin", "planner"].includes(profile.profile_role)) {
-          // Check if has multiple roles
-          const { count: houseCount } = await supabase
-            .from("house_members")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", user.id);
-
-          if ((houseCount || 0) > 0) {
-            // Has multiple roles - go to selection
-            navigate("/profile-selection");
+        if (plannerProfile) {
+          // User is a planner
+          setActiveRole(plannerProfile.planner_role as "planner_admin" | "planner");
+          
+          if (plannerProfile.planner_role === "planner_admin" && !plannerProfile.onboarding_complete) {
+            navigate("/planner-onboarding");
           } else {
-            // Only planner role
-            setActiveRole(profile.profile_role as "planner_admin" | "planner");
-            if (profile.profile_role === "planner_admin" && !profile.planner_onboarding_complete) {
-              navigate("/planner-onboarding");
-            } else {
-              navigate("/planner");
-            }
+            navigate("/planner");
           }
         }
+        // If no planner profile, user might be a normal user trying to access planner area
+        // Don't redirect - let them try to login
       }
     };
 
@@ -112,41 +104,37 @@ export default function PlannerAuth() {
       return;
     }
 
-    // Verify if user is a planner
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("profile_role, planner_onboarding_complete")
+    // Verify if user exists in planner_profiles table
+    const { data: plannerProfile } = await supabase
+      .from("planner_profiles")
+      .select("planner_role, onboarding_complete, is_active")
       .eq("id", session.user.id)
       .single();
 
-    if (!profile || !["planner_admin", "planner"].includes(profile.profile_role)) {
+    if (!plannerProfile) {
       // Not a planner - show error and sign out
-      setAccessError("Esta conta não possui permissões de planejador. Use o login de usuários comuns.");
+      setAccessError("Esta conta não é uma conta de planejador. Se você é um usuário comum, acesse pela área de usuários.");
       await signOut();
       setIsLoading(false);
       return;
     }
 
-    // Check if has house membership (multiple roles)
-    const { count: houseCount } = await supabase
-      .from("house_members")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", session.user.id);
+    if (!plannerProfile.is_active) {
+      setAccessError("Sua conta de planejador está desativada. Entre em contato com o administrador.");
+      await signOut();
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(false);
-
-    if ((houseCount || 0) > 0) {
-      // Has multiple roles - go to selection
-      navigate("/profile-selection");
+    
+    // Set active role and navigate
+    setActiveRole(plannerProfile.planner_role as "planner_admin" | "planner");
+    
+    if (plannerProfile.planner_role === "planner_admin" && !plannerProfile.onboarding_complete) {
+      navigate("/planner-onboarding");
     } else {
-      // Only planner role
-      setActiveRole(profile.profile_role as "planner_admin" | "planner");
-      
-      if (profile.profile_role === "planner_admin" && !profile.planner_onboarding_complete) {
-        navigate("/planner-onboarding");
-      } else {
-        navigate("/planner");
-      }
+      navigate("/planner");
     }
   };
 

@@ -3,16 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-export type ProfileRole = "user" | "planner_admin" | "planner";
+export type PlannerRole = "planner_admin" | "planner";
 
 export interface PlannerProfile {
   id: string;
   full_name: string | null;
-  profile_role: ProfileRole;
   cnpj: string | null;
   razao_social: string | null;
+  planner_role: PlannerRole;
   parent_planner_id: string | null;
-  planner_onboarding_complete: boolean | null;
+  onboarding_complete: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export function usePlannerProfile() {
@@ -20,12 +23,14 @@ export function usePlannerProfile() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<PlannerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPlannerUser, setIsPlannerUser] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
     } else {
       setProfile(null);
+      setIsPlannerUser(false);
       setLoading(false);
     }
   }, [user]);
@@ -35,16 +40,27 @@ export function usePlannerProfile() {
 
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, profile_role, cnpj, razao_social, parent_planner_id, planner_onboarding_complete")
+        .from("planner_profiles")
+        .select("*")
         .eq("id", user.id)
         .single();
 
-      if (error) throw error;
-
-      setProfile(data as PlannerProfile);
+      if (error) {
+        if (error.code === "PGRST116") {
+          // No profile found - user is not a planner
+          setProfile(null);
+          setIsPlannerUser(false);
+        } else {
+          throw error;
+        }
+      } else {
+        setProfile(data as PlannerProfile);
+        setIsPlannerUser(true);
+      }
     } catch (error) {
       console.error("Error fetching planner profile:", error);
+      setProfile(null);
+      setIsPlannerUser(false);
     } finally {
       setLoading(false);
     }
@@ -55,11 +71,11 @@ export function usePlannerProfile() {
 
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from("planner_profiles")
         .update({
           cnpj: data.cnpj || null,
           razao_social: data.razao_social,
-          planner_onboarding_complete: true,
+          onboarding_complete: true,
         })
         .eq("id", user.id);
 
@@ -83,17 +99,48 @@ export function usePlannerProfile() {
     }
   };
 
-  const isPlannerAdmin = profile?.profile_role === "planner_admin";
-  const isPlanner = profile?.profile_role === "planner" || profile?.profile_role === "planner_admin";
-  const needsOnboarding = isPlannerAdmin && !profile?.planner_onboarding_complete;
+  const updateProfile = async (data: Partial<PlannerProfile>) => {
+    if (!user) return { error: new Error("Not authenticated") };
+
+    try {
+      const { error } = await supabase
+        .from("planner_profiles")
+        .update(data)
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      await fetchProfile();
+      
+      toast({
+        title: "Perfil atualizado!",
+        description: "Suas informações foram salvas.",
+      });
+
+      return { error: null };
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar os dados. Tente novamente.",
+        variant: "destructive",
+      });
+      return { error: error as Error };
+    }
+  };
+
+  const isPlannerAdmin = profile?.planner_role === "planner_admin";
+  const isPlanner = profile?.planner_role === "planner" || profile?.planner_role === "planner_admin";
+  const needsOnboarding = isPlannerAdmin && !profile?.onboarding_complete;
 
   return {
     profile,
     loading,
+    isPlannerUser,
     isPlannerAdmin,
     isPlanner,
     needsOnboarding,
     updatePlannerOnboarding,
+    updateProfile,
     refreshProfile: fetchProfile,
   };
 }

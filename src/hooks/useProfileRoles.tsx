@@ -10,6 +10,8 @@ interface UserCapabilities {
   hasMultipleRoles: boolean;
   availableRoles: ActiveRole[];
   loading: boolean;
+  isNormalUser: boolean;
+  isPlannerUser: boolean;
 }
 
 export function useProfileRoles(): UserCapabilities {
@@ -21,6 +23,8 @@ export function useProfileRoles(): UserCapabilities {
     hasMultipleRoles: false,
     availableRoles: [],
     loading: true,
+    isNormalUser: false,
+    isPlannerUser: false,
   });
 
   useEffect(() => {
@@ -33,45 +37,57 @@ export function useProfileRoles(): UserCapabilities {
           hasMultipleRoles: false,
           availableRoles: [],
           loading: false,
+          isNormalUser: false,
+          isPlannerUser: false,
         });
         return;
       }
 
       try {
-        // Fetch profile role
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("profile_role")
+        // Check user_profiles table
+        const { data: userProfile } = await supabase
+          .from("user_profiles")
+          .select("id")
           .eq("id", user.id)
           .single();
 
-        // Fetch house membership count
-        const { count: houseCount } = await supabase
-          .from("house_members")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id);
+        // Check planner_profiles table
+        const { data: plannerProfile } = await supabase
+          .from("planner_profiles")
+          .select("planner_role")
+          .eq("id", user.id)
+          .single();
 
-        const profileRole = profile?.profile_role || "user";
-        const hasHouse = (houseCount || 0) > 0;
+        const isNormalUser = !!userProfile;
+        const isPlannerUser = !!plannerProfile;
 
-        const canAccessPlannerAdmin = profileRole === "planner_admin";
-        const canAccessPlanner = profileRole === "planner" || profileRole === "planner_admin";
-        const canAccessUser = hasHouse;
+        // Check house membership for normal users
+        let hasHouse = false;
+        if (isNormalUser) {
+          const { count: houseCount } = await supabase
+            .from("house_members")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id);
+          hasHouse = (houseCount || 0) > 0;
+        }
+
+        const canAccessPlannerAdmin = plannerProfile?.planner_role === "planner_admin";
+        const canAccessPlanner = isPlannerUser;
+        const canAccessUser = isNormalUser && hasHouse;
 
         // Build available roles list
         const availableRoles: ActiveRole[] = [];
         if (canAccessPlannerAdmin) {
           availableRoles.push("planner_admin");
-        } else if (profileRole === "planner") {
+        } else if (plannerProfile?.planner_role === "planner") {
           availableRoles.push("planner");
         }
         if (canAccessUser) {
           availableRoles.push("user");
         }
 
-        // Has multiple roles if both planner type and user
-        const isPlannerType = ["planner_admin", "planner"].includes(profileRole);
-        const hasMultipleRoles = isPlannerType && hasHouse;
+        // Has multiple roles if both planner and user with house
+        const hasMultipleRoles = isPlannerUser && isNormalUser && hasHouse;
 
         setCapabilities({
           canAccessPlannerAdmin,
@@ -80,6 +96,8 @@ export function useProfileRoles(): UserCapabilities {
           hasMultipleRoles,
           availableRoles,
           loading: false,
+          isNormalUser,
+          isPlannerUser,
         });
       } catch (error) {
         console.error("Error fetching profile roles:", error);
@@ -90,6 +108,8 @@ export function useProfileRoles(): UserCapabilities {
           hasMultipleRoles: false,
           availableRoles: [],
           loading: false,
+          isNormalUser: false,
+          isPlannerUser: false,
         });
       }
     };
