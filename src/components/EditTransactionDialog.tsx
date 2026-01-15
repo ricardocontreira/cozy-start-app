@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Loader2, Pencil, Repeat } from "lucide-react";
+import { CalendarIcon, Loader2, Pencil, Repeat, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { RecurrenceUpdateDialog, RecurrenceUpdateType } from "./RecurrenceUpdateDialog";
+import { RecurrenceDeleteDialog, RecurrenceDeleteType } from "./RecurrenceDeleteDialog";
 
 const transactionSchema = z.object({
   description: z.string().min(2, "Descrição deve ter pelo menos 2 caracteres").max(100, "Máximo 100 caracteres"),
@@ -71,7 +82,10 @@ export function EditTransactionDialog({
 }: EditTransactionDialogProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showRecurrenceDialog, setShowRecurrenceDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRecurrenceDeleteDialog, setShowRecurrenceDeleteDialog] = useState(false);
   const [pendingData, setPendingData] = useState<TransactionFormData | null>(null);
   const [futureCount, setFutureCount] = useState(0);
 
@@ -225,6 +239,92 @@ export function EditTransactionDialog({
     }
   };
 
+  const handleDeleteClick = () => {
+    if (isRecurring) {
+      setShowRecurrenceDeleteDialog(true);
+    } else {
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const handleDeleteSingle = async () => {
+    if (!transaction) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", transaction.id);
+
+      if (error) throw error;
+
+      toast({
+        title: isIncome ? "Receita excluída!" : "Despesa excluída!",
+        description: "A transação foi removida.",
+      });
+
+      setShowDeleteDialog(false);
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleRecurrenceDeleteConfirm = async (deleteType: RecurrenceDeleteType) => {
+    if (!transaction) return;
+
+    setDeleting(true);
+    try {
+      if (deleteType === "single") {
+        // Delete only this transaction
+        const { error } = await supabase
+          .from("transactions")
+          .delete()
+          .eq("id", transaction.id);
+
+        if (error) throw error;
+
+        toast({
+          title: isIncome ? "Receita excluída!" : "Despesa excluída!",
+          description: "A transação foi removida.",
+        });
+      } else {
+        // Delete this and all future transactions
+        const { error } = await supabase
+          .from("transactions")
+          .delete()
+          .eq("recurrence_id", transaction.recurrence_id)
+          .gte("transaction_date", transaction.transaction_date);
+
+        if (error) throw error;
+
+        toast({
+          title: isIncome ? "Receitas excluídas!" : "Despesas excluídas!",
+          description: `${futureCount} transações foram removidas.`,
+        });
+      }
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -336,28 +436,72 @@ export function EditTransactionDialog({
               </Popover>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={submitting}
+                variant="destructive"
+                onClick={handleDeleteClick}
+                disabled={submitting || deleting}
+                className="w-full sm:w-auto sm:mr-auto"
               >
-                Cancelar
+                {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Salvar
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={submitting || deleting}
+                  className="flex-1 sm:flex-none"
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting || deleting} className="flex-1 sm:flex-none">
+                  {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Salvar
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Simple delete confirmation for non-recurring */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta {isIncome ? "receita" : "despesa"}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSingle}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <RecurrenceUpdateDialog
         open={showRecurrenceDialog}
         onOpenChange={setShowRecurrenceDialog}
         onConfirm={handleRecurrenceConfirm}
+        futureCount={futureCount}
+      />
+
+      <RecurrenceDeleteDialog
+        open={showRecurrenceDeleteDialog}
+        onOpenChange={setShowRecurrenceDeleteDialog}
+        onConfirm={handleRecurrenceDeleteConfirm}
         futureCount={futureCount}
       />
     </>
