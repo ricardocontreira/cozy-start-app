@@ -352,30 +352,13 @@ export default function PlannerDashboard() {
             {/* ========== SEÇÃO: MEUS CLIENTES ========== */}
             <Card>
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Users className="w-5 h-5 text-primary" />
-                      Meus Clientes
-                    </CardTitle>
-                    <CardDescription>
-                      {clients.length} cliente(s) vinculado(s)
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    onClick={handleCreateInvite} 
-                    disabled={creatingInvite || !canCreateInvite}
-                    className="lg:hidden"
-                  >
-                    {creatingInvite ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="w-4 h-4 mr-2" />
-                    )}
-                    Novo Convite
-                  </Button>
-                </div>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Users className="w-5 h-5 text-primary" />
+                  Meus Clientes
+                </CardTitle>
+                <CardDescription>
+                  {clients.length} cliente(s) vinculado(s)
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Lista de clientes */}
