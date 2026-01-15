@@ -72,7 +72,7 @@ export default function PlannerDashboard() {
     deleteInvite, 
     copyInviteCode 
   } = usePlannerInvites();
-  const { clients, loading: clientsLoading } = usePlannerClients();
+  const { clients, loading: clientsLoading, unlinkClient, refreshClients } = usePlannerClients();
   const { activeRole, clearActiveRole } = useActiveRole();
   const { hasMultipleRoles, loading: rolesLoading } = useProfileRoles();
 
@@ -98,6 +98,9 @@ export default function PlannerDashboard() {
   const [newInvite, setNewInvite] = useState<PlannerInvite | null>(null);
   const [showUsedInvites, setShowUsedInvites] = useState(false);
   const [showExpiredInvites, setShowExpiredInvites] = useState(false);
+  const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
+  const [clientToUnlink, setClientToUnlink] = useState<{ id: string; name: string } | null>(null);
+  const [isUnlinking, setIsUnlinking] = useState(false);
 
   const isLoading = authLoading || profileLoading;
 
@@ -195,14 +198,29 @@ export default function PlannerDashboard() {
     setNewInvite(null);
   };
 
+  const handleUnlinkClick = (client: { id: string; full_name: string | null }) => {
+    setClientToUnlink({ id: client.id, name: client.full_name || "Cliente" });
+    setUnlinkDialogOpen(true);
+  };
+
+  const handleConfirmUnlink = async () => {
+    if (!clientToUnlink) return;
+    
+    setIsUnlinking(true);
+    await unlinkClient(clientToUnlink.id);
+    setIsUnlinking(false);
+    setUnlinkDialogOpen(false);
+    setClientToUnlink(null);
+  };
+
   const getTeamStatsDisplay = (stats: InviteStats | undefined, limit: number) => {
     if (!stats) return null;
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
         <Mail className="w-3 h-3" />
         <span>
-          {stats.used}/{limit} usados
-          {stats.active > 0 && <span className="text-primary"> • {stats.active} ativos</span>}
+          {stats.used}/{limit} em uso
+          {stats.active > 0 && <span className="text-primary"> • {stats.active} pendentes</span>}
         </span>
       </div>
     );
@@ -332,7 +350,9 @@ export default function PlannerDashboard() {
             {/* Limite de convites */}
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Limite de convites</span>
+                <span className="text-muted-foreground">
+                  Convites ({inviteStats?.used || 0} em uso + {inviteStats?.active || 0} pendentes)
+                </span>
                 <span className="font-medium">
                   {limitInfo.used} / {inviteStats?.limit === 0 ? "∞" : limitInfo.total}
                 </span>
@@ -342,12 +362,12 @@ export default function PlannerDashboard() {
               )}
             </div>
 
-            {/* Convites ativos */}
+            {/* Convites pendentes (não usados ainda) */}
             {activeInvites.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-primary" />
-                  Convites Ativos ({activeInvites.length})
+                  Convites Pendentes ({activeInvites.length})
                 </p>
                 <div className="space-y-2">
                   {activeInvites.map((invite) => (
@@ -363,12 +383,12 @@ export default function PlannerDashboard() {
               </div>
             )}
 
-            {/* Convites usados (colapsável) */}
+            {/* Histórico de convites usados (colapsável) */}
             {usedInvites.length > 0 && (
               <Collapsible open={showUsedInvites} onOpenChange={setShowUsedInvites}>
                 <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full">
                   <Check className="w-3.5 h-3.5 text-green-600" />
-                  Convites Usados ({usedInvites.length})
+                  Histórico de Convites ({usedInvites.length})
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-2 mt-2">
                   {usedInvites.map((invite) => (
@@ -410,7 +430,7 @@ export default function PlannerDashboard() {
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-sm font-medium flex items-center gap-2">
                   <Users className="w-3.5 h-3.5" />
-                  Clientes Vinculados
+                  Clientes Vinculados ({clients.length})
                 </p>
                 <div className="space-y-2">
                   {clients.map((client) => (
@@ -426,7 +446,18 @@ export default function PlannerDashboard() {
                           </p>
                         )}
                       </div>
-                      <Badge variant="secondary" className="text-xs">Ativo</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">Em uso</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => handleUnlinkClick(client)}
+                          title="Desvincular cliente"
+                        >
+                          <UserX className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -645,6 +676,29 @@ export default function PlannerDashboard() {
               className="bg-destructive hover:bg-destructive/90"
             >
               {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unlink Client Confirmation Dialog */}
+      <AlertDialog open={unlinkDialogOpen} onOpenChange={setUnlinkDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desvincular Cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja desvincular <strong>{clientToUnlink?.name}</strong>?
+              O cliente perderá o acesso patrocinado ao FinLar Pro.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUnlinking}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmUnlink}
+              disabled={isUnlinking}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isUnlinking ? "Desvinculando..." : "Desvincular"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

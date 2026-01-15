@@ -616,6 +616,10 @@ export type Database = {
         Args: { house_id_param: string }
         Returns: string
       }
+      unlink_planner_client: {
+        Args: { client_user_id: string }
+        Returns: boolean
+      }
       use_planner_invite: {
         Args: { client_user_id: string; code: string }
         Returns: string
