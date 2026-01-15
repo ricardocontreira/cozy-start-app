@@ -17,6 +17,7 @@ import { HouseMembersList } from "@/components/HouseMembersList";
 import { LeaveHouseDialog } from "@/components/LeaveHouseDialog";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
+import { ChangePasswordCard } from "@/components/ChangePasswordCard";
 
 export default function Settings() {
   const { user, loading: authLoading } = useAuth();
@@ -282,6 +283,9 @@ export default function Settings() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Change Password Card */}
+            <ChangePasswordCard />
           </TabsContent>
 
           {/* Members Tab */}
