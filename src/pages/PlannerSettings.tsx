@@ -21,8 +21,6 @@ export default function PlannerSettings() {
   const { clearActiveRole } = useActiveRole();
   const { hasMultipleRoles } = useProfileRoles();
   const { toast } = useToast();
-  const { profile, isPlannerAdmin, isPlanner, loading: profileLoading, refreshProfile } = usePlannerProfile();
-  const { toast } = useToast();
 
   const [razaoSocial, setRazaoSocial] = useState("");
   const [cnpj, setCnpj] = useState("");
