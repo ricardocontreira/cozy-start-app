@@ -337,21 +337,11 @@ export default function PlannerDashboard() {
               }
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Convites disponíveis</p>
-              <p className="text-2xl font-bold text-primary">
-                {inviteStats?.limit === 0 ? "∞" : `${limitInfo.total - limitInfo.used}`}
-              </p>
-            </div>
-            <Button size="lg" onClick={handleCreateInvite} disabled={creatingInvite || !canCreateInvite}>
-              {creatingInvite ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
-              Novo Convite
-            </Button>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Convites disponíveis</p>
+            <p className="text-2xl font-bold text-primary">
+              {inviteStats?.limit === 0 ? "∞" : `${limitInfo.total - limitInfo.used}`}
+            </p>
           </div>
         </div>
 
