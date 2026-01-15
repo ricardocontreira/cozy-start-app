@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Plus, Users, Loader2, ArrowRight } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 
+import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export default function HouseSetup() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
   
+  const { user } = useAuth();
   const { createHouse, joinHouse } = useHouse();
   const { 
     isSubscribed, 
@@ -138,9 +140,14 @@ export default function HouseSetup() {
         open={showSubscriptionDialog}
         onOpenChange={setShowSubscriptionDialog}
         onSubscribe={handleSubscribe}
+        onPlannerCodeSuccess={() => {
+          setShowSubscriptionDialog(false);
+          checkSubscription();
+        }}
         loading={checkoutLoading}
         isInTrial={isInTrial}
         trialDaysRemaining={trialDaysRemaining}
+        userId={user?.id}
       />
 
       <header className="flex items-center justify-between p-4 md:p-6">
