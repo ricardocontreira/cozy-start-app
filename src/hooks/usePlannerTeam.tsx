@@ -12,12 +12,20 @@ export interface TeamMember {
   parent_planner_id: string | null;
   onboarding_complete: boolean;
   is_active: boolean;
+  client_invite_limit: number;
+}
+
+export interface InviteStats {
+  used: number;
+  active: number;
+  limit: number;
 }
 
 export function usePlannerTeam() {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [memberStats, setMemberStats] = useState<Record<string, InviteStats>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,12 +40,29 @@ export function usePlannerTeam() {
     try {
       const { data, error } = await supabase
         .from("planner_profiles")
-        .select("id, full_name, planner_role, cnpj, razao_social, parent_planner_id, onboarding_complete, is_active")
+        .select("id, full_name, planner_role, cnpj, razao_social, parent_planner_id, onboarding_complete, is_active, client_invite_limit")
         .eq("parent_planner_id", user.id);
 
       if (error) throw error;
 
       setTeamMembers(data as TeamMember[]);
+
+      // Fetch stats for each team member
+      const statsPromises = (data || []).map(async (member) => {
+        const { data: stats } = await supabase.rpc("get_planner_invite_stats", {
+          planner_uuid: member.id,
+        });
+        return { id: member.id, stats: stats as unknown as InviteStats };
+      });
+
+      const statsResults = await Promise.all(statsPromises);
+      const statsMap: Record<string, InviteStats> = {};
+      statsResults.forEach(({ id, stats }) => {
+        if (stats) {
+          statsMap[id] = stats;
+        }
+      });
+      setMemberStats(statsMap);
     } catch (error) {
       console.error("Error fetching team members:", error);
     } finally {
@@ -48,7 +73,8 @@ export function usePlannerTeam() {
   const createPlannerAssistant = async (
     fullName: string,
     email: string,
-    password: string
+    password: string,
+    clientInviteLimit: number = 5
   ): Promise<boolean> => {
     if (!user || !session) {
       toast({
@@ -65,6 +91,7 @@ export function usePlannerTeam() {
           fullName,
           email,
           password,
+          clientInviteLimit,
         },
       });
 
@@ -179,12 +206,46 @@ export function usePlannerTeam() {
     }
   };
 
+  const updateInviteLimit = async (
+    plannerId: string,
+    limit: number
+  ): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from("planner_profiles")
+        .update({ client_invite_limit: limit })
+        .eq("id", plannerId)
+        .eq("parent_planner_id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Limite atualizado",
+        description: `O limite de convites foi alterado para ${limit}.`,
+      });
+
+      await fetchTeamMembers();
+      return true;
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar limite",
+        description: "Não foi possível atualizar o limite. Tente novamente.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     teamMembers,
+    memberStats,
     loading,
     createPlannerAssistant,
     removePlannerAssistant,
     togglePlannerStatus,
+    updateInviteLimit,
     refreshTeam: fetchTeamMembers,
   };
 }
