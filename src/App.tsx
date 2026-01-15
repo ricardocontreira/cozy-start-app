@@ -23,6 +23,7 @@ import GoalDetails from "./pages/GoalDetails";
 import Settings from "./pages/Settings";
 import PlannerOnboarding from "./pages/PlannerOnboarding";
 import PlannerTeam from "./pages/PlannerTeam";
+import PlannerClients from "./pages/PlannerClients";
 import PlannerDashboard from "./pages/PlannerDashboard";
 import PlannerSettings from "./pages/PlannerSettings";
 import NotFound from "./pages/NotFound";
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/planner-onboarding" element={<PlannerOnboarding />} />
                 <Route path="/planner" element={<PlannerDashboard />} />
                 <Route path="/planner/team" element={<PlannerTeam />} />
+                <Route path="/planner/clients" element={<PlannerClients />} />
                 <Route path="/planner/settings" element={<PlannerSettings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

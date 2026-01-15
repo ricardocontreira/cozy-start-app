@@ -209,8 +209,57 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_invites: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          invite_code: string
+          planner_id: string
+          updated_at: string | null
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          invite_code?: string
+          planner_id: string
+          updated_at?: string | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          invite_code?: string
+          planner_id?: string
+          updated_at?: string | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_invites_planner_id_fkey"
+            columns: ["planner_id"]
+            isOneToOne: false
+            referencedRelation: "planner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planner_invites_used_by_fkey"
+            columns: ["used_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planner_profiles: {
         Row: {
+          client_invite_limit: number | null
           cnpj: string | null
           created_at: string | null
           full_name: string | null
@@ -223,6 +272,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          client_invite_limit?: number | null
           cnpj?: string | null
           created_at?: string | null
           full_name?: string | null
@@ -235,6 +285,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          client_invite_limit?: number | null
           cnpj?: string | null
           created_at?: string | null
           full_name?: string | null
@@ -462,6 +513,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          invited_by_planner_id: string | null
           phone: string | null
           stripe_customer_id: string | null
           subscription_id: string | null
@@ -476,6 +528,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          invited_by_planner_id?: string | null
           phone?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
@@ -490,6 +543,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          invited_by_planner_id?: string | null
           phone?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
@@ -497,7 +551,15 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_invited_by_planner_id_fkey"
+            columns: ["invited_by_planner_id"]
+            isOneToOne: false
+            referencedRelation: "planner_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -531,6 +593,10 @@ export type Database = {
         Args: { _house_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_planner_invite_stats: {
+        Args: { planner_uuid: string }
+        Returns: Json
+      }
       get_planner_role: { Args: { _user_id: string }; Returns: string }
       get_profile_role: {
         Args: { _user_id: string }
@@ -550,6 +616,11 @@ export type Database = {
         Args: { house_id_param: string }
         Returns: string
       }
+      use_planner_invite: {
+        Args: { client_user_id: string; code: string }
+        Returns: string
+      }
+      validate_invite_code: { Args: { code: string }; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "viewer"

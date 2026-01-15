@@ -66,14 +66,15 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Fetch trial_ends_at and bypass_subscription from user_profiles
+    // Fetch trial_ends_at, bypass_subscription and invited_by_planner_id from user_profiles
     const { data: profile } = await supabaseClient
       .from("user_profiles")
-      .select("trial_ends_at, bypass_subscription")
+      .select("trial_ends_at, bypass_subscription, invited_by_planner_id")
       .eq("id", user.id)
       .single();
 
     const bypassSubscription = profile?.bypass_subscription ?? false;
+    const invitedByPlannerId = profile?.invited_by_planner_id ?? null;
     const trialEndsAt = profile?.trial_ends_at ?? null;
     const isInTrial = trialEndsAt ? new Date(trialEndsAt) > new Date() : false;
     
@@ -87,10 +88,40 @@ serve(async (req) => {
         cancel_at_period_end: false,
         trial_ends_at: null,
         is_in_trial: false,
+        planner_sponsored: false,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
+    }
+
+    // Se foi convidado por um planejador, tem acesso gratuito
+    if (invitedByPlannerId) {
+      // Verificar se o planejador ainda está ativo
+      const { data: plannerProfile } = await supabaseClient
+        .from("planner_profiles")
+        .select("id, full_name, is_active")
+        .eq("id", invitedByPlannerId)
+        .single();
+
+      if (plannerProfile?.is_active) {
+        logStep("User sponsored by planner", { userId: user.id, plannerId: invitedByPlannerId });
+        return new Response(JSON.stringify({ 
+          subscribed: true,
+          planner_sponsored: true,
+          sponsoring_planner_id: invitedByPlannerId,
+          sponsoring_planner_name: plannerProfile.full_name,
+          subscription_end: null,
+          cancel_at_period_end: false,
+          trial_ends_at: null,
+          is_in_trial: false,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        logStep("Planner sponsorship inactive", { userId: user.id, plannerId: invitedByPlannerId });
+      }
     }
     
     logStep("Trial status", { trialEndsAt, isInTrial });
