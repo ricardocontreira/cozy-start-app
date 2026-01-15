@@ -18,7 +18,7 @@ export default function PlannerSettings() {
   const navigate = useNavigate();
   const { user, signOut, loading: authLoading } = useAuth();
   const { profile, isPlannerAdmin, isPlanner, loading: profileLoading, refreshProfile } = usePlannerProfile();
-  const { clearActiveRole } = useActiveRole();
+  const { activeRole, clearActiveRole } = useActiveRole();
   const { hasMultipleRoles } = useProfileRoles();
   const { toast } = useToast();
 
@@ -35,6 +35,13 @@ export default function PlannerSettings() {
       navigate("/planner/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Redirect to user settings if active role is user
+  useEffect(() => {
+    if (activeRole === "user") {
+      navigate("/settings");
+    }
+  }, [activeRole, navigate]);
 
   useEffect(() => {
     if (!profileLoading && profile && !isPlanner) {
@@ -208,6 +215,28 @@ export default function PlannerSettings() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Switch Profile - Only for users with multiple roles */}
+        {hasMultipleRoles && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Trocar Perfil</CardTitle>
+              <CardDescription>
+                Você tem acesso a múltiplos perfis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                onClick={handleSwitchProfile}
+                className="w-full"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Trocar Perfil
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Logout */}
         <Card className="border-destructive/50">

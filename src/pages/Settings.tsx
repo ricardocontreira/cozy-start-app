@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, RefreshCw, Save, Home, Mail, Users } from "lucide-react";
+import { ArrowLeft, Copy, Check, RefreshCw, Save, Home, Mail } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
-import { usePlannerProfile } from "@/hooks/usePlannerProfile";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { useProfileRoles } from "@/hooks/useProfileRoles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,8 @@ export default function Settings() {
     leaveHouse,
     refreshHouses
   } = useHouse();
-  const { isPlannerAdmin, loading: plannerLoading } = usePlannerProfile();
+  const { activeRole, clearActiveRole } = useActiveRole();
+  const { hasMultipleRoles } = useProfileRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -49,12 +51,12 @@ export default function Settings() {
     }
   }, [user, authLoading, navigate]);
 
-  // Redirect planners to their own settings
+  // Redirect to planner settings if active role is planner
   useEffect(() => {
-    if (!plannerLoading && isPlannerAdmin) {
+    if (activeRole === "planner" || activeRole === "planner_admin") {
       navigate("/planner/settings");
     }
-  }, [isPlannerAdmin, plannerLoading, navigate]);
+  }, [activeRole, navigate]);
 
   useEffect(() => {
     if (currentHouse) {
@@ -129,7 +131,7 @@ export default function Settings() {
     }
   };
 
-  if (authLoading || houseLoading || plannerLoading) {
+  if (authLoading || houseLoading) {
     return (
       <div className="min-h-screen bg-background p-4 md:p-6">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -165,12 +167,9 @@ export default function Settings() {
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-4 py-6 md:px-6 md:py-8">
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className={`grid w-full ${isPlannerAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="members">Membros</TabsTrigger>
-            {isPlannerAdmin && (
-              <TabsTrigger value="team">Equipe</TabsTrigger>
-            )}
             <TabsTrigger value="support">Suporte</TabsTrigger>
           </TabsList>
 
@@ -294,27 +293,30 @@ export default function Settings() {
             />
           </TabsContent>
 
-          {/* Team Tab - Only for Planner Admins */}
-          {isPlannerAdmin && (
-            <TabsContent value="team" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Minha Equipe de Planejadores
-                  </CardTitle>
-                  <CardDescription>
-                    Gerencie os planejadores assistentes da sua equipe
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate("/planner/team")} className="w-full">
-                    <Users className="w-4 h-4 mr-2" />
-                    Gerenciar Equipe
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+
+          {/* Switch Profile - Only for users with multiple roles */}
+          {hasMultipleRoles && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Trocar Perfil</CardTitle>
+                <CardDescription>
+                  Você tem acesso a múltiplos perfis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    clearActiveRole();
+                    navigate("/profile-selection");
+                  }}
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Trocar Perfil
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* Support Tab */}
