@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2, RefreshCw, Settings } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2, RefreshCw, Settings, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlannerProfile } from "@/hooks/usePlannerProfile";
-import { usePlannerTeam, TeamMember } from "@/hooks/usePlannerTeam";
+import { usePlannerTeam, TeamMember, InviteStats } from "@/hooks/usePlannerTeam";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { useProfileRoles } from "@/hooks/useProfileRoles";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlannerBottomNav } from "@/components/PlannerBottomNav";
 import { AddPlannerDialog } from "@/components/AddPlannerDialog";
 import { EditPlannerDialog } from "@/components/EditPlannerDialog";
+import { EditInviteLimitDialog } from "@/components/EditInviteLimitDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
@@ -37,7 +38,7 @@ export default function PlannerDashboard() {
   const navigate = useNavigate();
   const { user, signOut, loading: authLoading } = useAuth();
   const { profile, isPlannerAdmin, isPlanner, needsOnboarding, loading: profileLoading } = usePlannerProfile();
-  const { teamMembers, loading: teamLoading, removePlannerAssistant, togglePlannerStatus, refreshTeam } = usePlannerTeam();
+  const { teamMembers, memberStats, loading: teamLoading, removePlannerAssistant, togglePlannerStatus, updateInviteLimit, refreshTeam } = usePlannerTeam();
   const { activeRole, clearActiveRole } = useActiveRole();
   const { hasMultipleRoles, loading: rolesLoading } = useProfileRoles();
 
@@ -48,6 +49,17 @@ export default function PlannerDashboard() {
   const [plannerToDelete, setPlannerToDelete] = useState<TeamMember | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState<string | null>(null);
+  const [editLimitDialog, setEditLimitDialog] = useState<{
+    open: boolean;
+    plannerId: string;
+    plannerName: string;
+    currentLimit: number;
+  }>({
+    open: false,
+    plannerId: "",
+    plannerName: "",
+    currentLimit: 5,
+  });
 
   const isLoading = authLoading || profileLoading;
 
@@ -114,6 +126,32 @@ export default function PlannerDashboard() {
     setIsTogglingStatus(planner.id);
     await togglePlannerStatus(planner.id, !planner.is_active);
     setIsTogglingStatus(null);
+  };
+
+  const handleEditLimit = (planner: TeamMember) => {
+    setEditLimitDialog({
+      open: true,
+      plannerId: planner.id,
+      plannerName: planner.full_name || "Planejador",
+      currentLimit: planner.client_invite_limit,
+    });
+  };
+
+  const handleSaveLimit = async (newLimit: number) => {
+    return await updateInviteLimit(editLimitDialog.plannerId, newLimit);
+  };
+
+  const getStatsDisplay = (stats: InviteStats | undefined, limit: number) => {
+    if (!stats) return null;
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+        <Mail className="w-3 h-3" />
+        <span>
+          {stats.used}/{limit} usados
+          {stats.active > 0 && <span className="text-primary"> • {stats.active} ativos</span>}
+        </span>
+      </div>
+    );
   };
 
   const getInitials = (name: string | null) => {
@@ -260,6 +298,7 @@ export default function PlannerDashboard() {
                             {planner.is_active ? "Ativo" : "Inativo"}
                           </Badge>
                         </div>
+                        {getStatsDisplay(memberStats[planner.id], planner.client_invite_limit)}
                       </div>
                     </div>
 
@@ -276,6 +315,14 @@ export default function PlannerDashboard() {
                         ) : (
                           <UserCheck className="w-4 h-4 text-primary" />
                         )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditLimit(planner)}
+                        title="Editar limite de convites"
+                      >
+                        <Mail className="w-4 h-4 text-muted-foreground" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -338,6 +385,15 @@ export default function PlannerDashboard() {
           onSuccess={refreshTeam}
         />
       )}
+
+      {/* Edit Invite Limit Dialog */}
+      <EditInviteLimitDialog
+        open={editLimitDialog.open}
+        onOpenChange={(open) => setEditLimitDialog((prev) => ({ ...prev, open }))}
+        plannerName={editLimitDialog.plannerName}
+        currentLimit={editLimitDialog.currentLimit}
+        onSave={handleSaveLimit}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
