@@ -69,11 +69,36 @@ export function usePlannerTeam() {
       });
 
       if (response.error) {
-        throw response.error;
+        // supabase-js returns a FunctionsHttpError with a Response in `context`
+        const err: any = response.error;
+        let message: string = err.message || "Não foi possível criar o planejador. Tente novamente.";
+
+        try {
+          const maybeResponse: Response | undefined = err.context;
+          if (maybeResponse) {
+            const body = await maybeResponse.clone().json();
+            if (body?.error) message = body.error;
+          }
+        } catch {
+          // ignore parsing errors
+        }
+
+        toast({
+          title: "Erro ao criar planejador",
+          description: message,
+          variant: "destructive",
+        });
+
+        return false;
       }
 
       if (response.data?.error) {
-        throw new Error(response.data.error);
+        toast({
+          title: "Erro ao criar planejador",
+          description: response.data.error,
+          variant: "destructive",
+        });
+        return false;
       }
 
       toast({
