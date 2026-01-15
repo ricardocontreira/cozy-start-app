@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2, RefreshCw } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, LogOut, UserX, UserCheck, Building2, RefreshCw, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlannerProfile } from "@/hooks/usePlannerProfile";
 import { usePlannerTeam, TeamMember } from "@/hooks/usePlannerTeam";
@@ -172,15 +172,20 @@ export default function PlannerDashboard() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/planner/settings")}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Configurações
+                  </DropdownMenuItem>
                   {hasMultipleRoles && (
                     <>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSwitchProfile}>
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Trocar Perfil
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                     </>
                   )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Sair
