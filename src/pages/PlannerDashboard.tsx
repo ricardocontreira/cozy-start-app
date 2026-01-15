@@ -23,7 +23,7 @@ import { AddPlannerDialog } from "@/components/AddPlannerDialog";
 import { EditPlannerDialog } from "@/components/EditPlannerDialog";
 import { EditInviteLimitDialog } from "@/components/EditInviteLimitDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ClientDetailsSheet } from "@/components/ClientDetailsSheet";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,8 +102,6 @@ export default function PlannerDashboard() {
   const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
   const [clientToUnlink, setClientToUnlink] = useState<{ id: string; name: string } | null>(null);
   const [isUnlinking, setIsUnlinking] = useState(false);
-  const [clientDetailsOpen, setClientDetailsOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const isLoading = authLoading || profileLoading;
 
@@ -217,8 +215,7 @@ export default function PlannerDashboard() {
   };
 
   const handleClientClick = (clientId: string) => {
-    setSelectedClientId(clientId);
-    setClientDetailsOpen(true);
+    navigate(`/planner/client/${clientId}`);
   };
 
   const getTeamStatsDisplay = (stats: InviteStats | undefined, limit: number) => {
@@ -724,12 +721,6 @@ export default function PlannerDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Client Details Sheet */}
-      <ClientDetailsSheet
-        open={clientDetailsOpen}
-        onOpenChange={setClientDetailsOpen}
-        clientId={selectedClientId}
-      />
 
       {/* Mobile Navigation */}
       <PlannerBottomNav activeRoute="home" />
