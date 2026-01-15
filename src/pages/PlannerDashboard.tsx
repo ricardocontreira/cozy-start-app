@@ -323,293 +323,359 @@ export default function PlannerDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 py-6 md:px-6 space-y-6">
-        {/* ========== SEÇÃO: MEUS CLIENTES E CONVITES ========== */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <LinkIcon className="w-5 h-5 text-primary" />
-                  Meus Clientes
-                </CardTitle>
-                <CardDescription>
-                  {clients.length} cliente(s) vinculado(s)
-                </CardDescription>
-              </div>
-              <Button 
-                size="sm" 
-                onClick={handleCreateInvite} 
-                disabled={creatingInvite || !canCreateInvite}
-              >
-                {creatingInvite ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4 mr-2" />
-                )}
-                Novo Convite
-              </Button>
+      <main className="max-w-7xl mx-auto px-4 py-6 md:px-6 space-y-6">
+        {/* Welcome Section - Desktop Only */}
+        <div className="hidden lg:flex items-center justify-between bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-6">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">
+              Olá, {profile?.full_name?.split(' ')[0] || 'Planejador'}! 👋
+            </h2>
+            <p className="text-muted-foreground mt-1">
+              {isPlannerAdmin 
+                ? `Gerencie seus ${clients.length} cliente(s) e ${activeTeamMembers.length} membro(s) da equipe`
+                : `Você tem ${clients.length} cliente(s) vinculado(s)`
+              }
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Convites disponíveis</p>
+              <p className="text-2xl font-bold text-primary">
+                {inviteStats?.limit === 0 ? "∞" : `${limitInfo.total - limitInfo.used}`}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Limite de convites */}
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">
-                  Convites ({inviteStats?.used || 0} em uso + {inviteStats?.active || 0} pendentes)
-                </span>
-                <span className="font-medium">
-                  {limitInfo.used} / {inviteStats?.limit === 0 ? "∞" : limitInfo.total}
-                </span>
-              </div>
-              {inviteStats?.limit !== 0 && (
-                <Progress value={limitInfo.percent} className="h-1.5" />
+            <Button size="lg" onClick={handleCreateInvite} disabled={creatingInvite || !canCreateInvite}>
+              {creatingInvite ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
               )}
-            </div>
+              Novo Convite
+            </Button>
+          </div>
+        </div>
 
-            {/* Convites pendentes (não usados ainda) */}
-            {activeInvites.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-primary" />
-                  Convites Pendentes ({activeInvites.length})
-                </p>
-                <div className="space-y-2">
-                  {activeInvites.map((invite) => (
-                    <InviteCard 
-                      key={invite.id} 
-                      invite={invite} 
-                      onCopy={copyInviteCode} 
-                      onDelete={deleteInvite}
-                      status="active"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Histórico de convites usados (colapsável) */}
-            {usedInvites.length > 0 && (
-              <Collapsible open={showUsedInvites} onOpenChange={setShowUsedInvites}>
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full">
-                  <Check className="w-3.5 h-3.5 text-green-600" />
-                  Histórico de Convites ({usedInvites.length})
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 mt-2">
-                  {usedInvites.map((invite) => (
-                    <InviteCard 
-                      key={invite.id} 
-                      invite={invite} 
-                      onCopy={copyInviteCode} 
-                      onDelete={deleteInvite}
-                      status="used"
-                    />
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Convites expirados (colapsável) */}
-            {expiredInvites.length > 0 && (
-              <Collapsible open={showExpiredInvites} onOpenChange={setShowExpiredInvites}>
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  Convites Expirados ({expiredInvites.length})
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 mt-2">
-                  {expiredInvites.map((invite) => (
-                    <InviteCard 
-                      key={invite.id} 
-                      invite={invite} 
-                      onCopy={copyInviteCode} 
-                      onDelete={deleteInvite}
-                      status="expired"
-                    />
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Lista de clientes */}
-            {clients.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5" />
-                  Clientes Vinculados ({clients.length})
-                </p>
-                <div className="space-y-2">
-                  {clients.map((client) => (
-                    <div
-                      key={client.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => handleClientClick(client.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {getInitials(client.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{client.full_name || "Sem nome"}</p>
-                          {client.created_at && (
-                            <p className="text-xs text-muted-foreground">
-                              Desde {format(new Date(client.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Em uso</Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUnlinkClick(client);
-                          }}
-                          title="Desvincular cliente"
-                        >
-                          <UserX className="w-3.5 h-3.5" />
-                        </Button>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeInvites.length === 0 && usedInvites.length === 0 && clients.length === 0 && (
-              <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">Nenhum convite ou cliente ainda</p>
-                <p className="text-xs">Crie um convite para começar</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* ========== SEÇÃO: EQUIPE (Apenas Admin) ========== */}
-        {isPlannerAdmin && (
-          <>
+        {/* Desktop Layout: Grid with 2 or 3 columns */}
+        <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
+          {/* Left Column: Clients */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* ========== SEÇÃO: MEUS CLIENTES ========== */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Users className="w-5 h-5 text-primary" />
-                      Minha Equipe
+                      Meus Clientes
                     </CardTitle>
                     <CardDescription>
-                      {activeTeamMembers.length} planejador(es) ativo(s)
-                      {inactiveTeamMembers.length > 0 && ` • ${inactiveTeamMembers.length} inativo(s)`}
+                      {clients.length} cliente(s) vinculado(s)
                     </CardDescription>
                   </div>
-                  <Button size="sm" onClick={() => setAddDialogOpen(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar
+                  <Button 
+                    size="sm" 
+                    onClick={handleCreateInvite} 
+                    disabled={creatingInvite || !canCreateInvite}
+                    className="lg:hidden"
+                  >
+                    {creatingInvite ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Novo Convite
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {teamLoading ? (
-                  <>
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                  </>
-                ) : teamMembers.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Nenhum planejador na equipe</p>
-                    <p className="text-xs">Adicione seu primeiro planejador assistente</p>
-                  </div>
-                ) : (
-                  teamMembers.map((planner) => (
-                    <div
-                      key={planner.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
-                        planner.is_active ? "bg-card" : "bg-muted/50 opacity-75"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className={`text-sm ${planner.is_active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                            {getInitials(planner.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{planner.full_name || "Sem nome"}</p>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={planner.is_active ? "default" : "secondary"} className="text-xs">
-                              {planner.is_active ? "Ativo" : "Inativo"}
-                            </Badge>
+              <CardContent className="space-y-4">
+                {/* Lista de clientes */}
+                {clients.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {clients.map((client) => (
+                      <div
+                        key={client.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => handleClientClick(client.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                              {getInitials(client.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{client.full_name || "Sem nome"}</p>
+                            {client.created_at && (
+                              <p className="text-xs text-muted-foreground">
+                                Desde {format(new Date(client.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                              </p>
+                            )}
                           </div>
-                          {getTeamStatsDisplay(memberStats[planner.id], planner.client_invite_limit)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkClick(client);
+                            }}
+                            title="Desvincular cliente"
+                          >
+                            <UserX className="w-3.5 h-3.5" />
+                          </Button>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleToggleStatus(planner)}
-                          disabled={isTogglingStatus === planner.id}
-                          title={planner.is_active ? "Inativar" : "Ativar"}
-                        >
-                          {planner.is_active ? (
-                            <UserX className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <UserCheck className="w-4 h-4 text-primary" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditLimit(planner)}
-                          title="Editar limite de convites"
-                        >
-                          <Mail className="w-4 h-4 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditPlanner(planner)}
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(planner)}
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">Nenhum cliente vinculado ainda</p>
+                    <p className="text-xs">Crie um convite para começar</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </>
-        )}
 
-        {/* Planner Assistant View (não admin) */}
-        {!isPlannerAdmin && isPlanner && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                Bem-vindo, {profile?.full_name}
-              </CardTitle>
-              <CardDescription>
-                Você está conectado como planejador assistente.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+            {/* ========== SEÇÃO: EQUIPE (Apenas Admin) ========== */}
+            {isPlannerAdmin && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Users className="w-5 h-5 text-primary" />
+                        Minha Equipe
+                      </CardTitle>
+                      <CardDescription>
+                        {activeTeamMembers.length} planejador(es) ativo(s)
+                        {inactiveTeamMembers.length > 0 && ` • ${inactiveTeamMembers.length} inativo(s)`}
+                      </CardDescription>
+                    </div>
+                    <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {teamLoading ? (
+                    <>
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </>
+                  ) : teamMembers.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Nenhum planejador na equipe</p>
+                      <p className="text-xs">Adicione seu primeiro planejador assistente</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {teamMembers.map((planner) => (
+                        <div
+                          key={planner.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border ${
+                            planner.is_active ? "bg-card" : "bg-muted/50 opacity-75"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarFallback className={`text-sm ${planner.is_active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                {getInitials(planner.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{planner.full_name || "Sem nome"}</p>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={planner.is_active ? "default" : "secondary"} className="text-xs">
+                                  {planner.is_active ? "Ativo" : "Inativo"}
+                                </Badge>
+                              </div>
+                              {getTeamStatsDisplay(memberStats[planner.id], planner.client_invite_limit)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleToggleStatus(planner)}
+                              disabled={isTogglingStatus === planner.id}
+                              title={planner.is_active ? "Inativar" : "Ativar"}
+                            >
+                              {planner.is_active ? (
+                                <UserX className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <UserCheck className="w-4 h-4 text-primary" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditLimit(planner)}
+                              title="Editar limite de convites"
+                            >
+                              <Mail className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditPlanner(planner)}
+                              title="Editar"
+                            >
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(planner)}
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Planner Assistant View (não admin) */}
+            {!isPlannerAdmin && isPlanner && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    Bem-vindo, {profile?.full_name}
+                  </CardTitle>
+                  <CardDescription>
+                    Você está conectado como planejador assistente.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
+          </div>
+
+          {/* Right Column: Invites (Desktop) */}
+          <div className="space-y-6">
+            {/* Limite e Convites */}
+            <Card className="lg:sticky lg:top-24">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <LinkIcon className="w-5 h-5 text-primary" />
+                  Convites
+                </CardTitle>
+                <CardDescription>
+                  Gerencie seus convites de clientes
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Limite de convites */}
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">
+                      {inviteStats?.used || 0} em uso • {inviteStats?.active || 0} pendentes
+                    </span>
+                    <span className="font-medium">
+                      {limitInfo.used} / {inviteStats?.limit === 0 ? "∞" : limitInfo.total}
+                    </span>
+                  </div>
+                  {inviteStats?.limit !== 0 && (
+                    <Progress value={limitInfo.percent} className="h-1.5" />
+                  )}
+                </div>
+
+                <Button 
+                  className="w-full" 
+                  onClick={handleCreateInvite} 
+                  disabled={creatingInvite || !canCreateInvite}
+                >
+                  {creatingInvite ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Criar Novo Convite
+                </Button>
+
+                {/* Convites pendentes (não usados ainda) */}
+                {activeInvites.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      Pendentes ({activeInvites.length})
+                    </p>
+                    <div className="space-y-2">
+                      {activeInvites.map((invite) => (
+                        <InviteCard 
+                          key={invite.id} 
+                          invite={invite} 
+                          onCopy={copyInviteCode} 
+                          onDelete={deleteInvite}
+                          status="active"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Histórico de convites usados (colapsável) */}
+                {usedInvites.length > 0 && (
+                  <Collapsible open={showUsedInvites} onOpenChange={setShowUsedInvites}>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full">
+                      <Check className="w-3.5 h-3.5 text-green-600" />
+                      Utilizados ({usedInvites.length})
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2 mt-2">
+                      {usedInvites.map((invite) => (
+                        <InviteCard 
+                          key={invite.id} 
+                          invite={invite} 
+                          onCopy={copyInviteCode} 
+                          onDelete={deleteInvite}
+                          status="used"
+                        />
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Convites expirados (colapsável) */}
+                {expiredInvites.length > 0 && (
+                  <Collapsible open={showExpiredInvites} onOpenChange={setShowExpiredInvites}>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Expirados ({expiredInvites.length})
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2 mt-2">
+                      {expiredInvites.map((invite) => (
+                        <InviteCard 
+                          key={invite.id} 
+                          invite={invite} 
+                          onCopy={copyInviteCode} 
+                          onDelete={deleteInvite}
+                          status="expired"
+                        />
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {activeInvites.length === 0 && usedInvites.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p className="text-xs">Nenhum convite criado ainda</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </main>
 
       {/* New invite dialog */}
