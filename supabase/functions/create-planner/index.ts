@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Create the new planner user
+    // Try to create the new planner user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -84,28 +84,82 @@ Deno.serve(async (req) => {
       },
     });
 
+    let userId: string;
+
     if (createError) {
       console.error("Error creating user:", createError);
       
-      // Handle specific error cases
+      // If email already exists, check if they already have a planner profile
       if (createError.message.includes("already registered") || createError.message.includes("already exists")) {
+        // Get the existing user by email
+        const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (listError) {
+          return new Response(
+            JSON.stringify({ error: "Erro ao verificar usuário existente" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const existingUser = existingUsers.users.find(u => u.email === email);
+        
+        if (!existingUser) {
+          return new Response(
+            JSON.stringify({ error: "Erro ao encontrar usuário existente" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Check if they already have a planner profile
+        const { data: existingPlanner } = await supabaseAdmin
+          .from("planner_profiles")
+          .select("id, parent_planner_id")
+          .eq("id", existingUser.id)
+          .maybeSingle();
+
+        if (existingPlanner) {
+          return new Response(
+            JSON.stringify({ error: "Este usuário já é um planejador" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Create planner profile for existing user
+        const { error: insertError } = await supabaseAdmin
+          .from("planner_profiles")
+          .insert({
+            id: existingUser.id,
+            full_name: fullName,
+            planner_role: "planner",
+            parent_planner_id: user.id,
+            is_active: true,
+            onboarding_complete: true,
+          });
+
+        if (insertError) {
+          console.error("Error creating planner profile:", insertError);
+          return new Response(
+            JSON.stringify({ error: "Erro ao criar perfil de planejador: " + insertError.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        userId = existingUser.id;
+      } else {
         return new Response(
-          JSON.stringify({ error: "Este e-mail já está cadastrado" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Erro ao criar planejador: " + createError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      return new Response(
-        JSON.stringify({ error: "Erro ao criar planejador: " + createError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    } else {
+      userId = newUser.user!.id;
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Planejador criado com sucesso",
-        userId: newUser.user.id,
+        userId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
