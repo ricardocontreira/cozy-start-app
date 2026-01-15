@@ -536,20 +536,6 @@ export default function PlannerDashboard() {
               </Card>
             )}
 
-            {/* Planner Assistant View (não admin) */}
-            {!isPlannerAdmin && isPlanner && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary" />
-                    Bem-vindo, {profile?.full_name}
-                  </CardTitle>
-                  <CardDescription>
-                    Você está conectado como planejador assistente.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            )}
           </div>
 
           {/* Right Column: Invites (Desktop) */}
