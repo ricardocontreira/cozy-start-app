@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFinancialGoals, GoalFormData } from "@/hooks/useFinancialGoals";
 import { useGoalContributions, GoalContribution } from "@/hooks/useGoalContributions";
@@ -19,7 +19,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useHouse } from "@/hooks/useHouse";
 import { useHouseTransactions } from "@/hooks/useHouseTransactions";
 import { useSubscription } from "@/hooks/useSubscription";
-import { usePlannerProfile } from "@/hooks/usePlannerProfile";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { useProfileRoles } from "@/hooks/useProfileRoles";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +53,8 @@ export default function Dashboard() {
     getTrialDaysRemaining,
     startCheckout,
   } = useSubscription();
-  const { isPlanner, loading: plannerLoading } = usePlannerProfile();
+  const { activeRole, clearActiveRole } = useActiveRole();
+  const { hasMultipleRoles, canAccessPlanner, loading: rolesLoading } = useProfileRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -189,18 +191,25 @@ export default function Dashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  // Redirect planners to their own dashboard
+  // Redirect if activeRole is planner type
   useEffect(() => {
-    if (!plannerLoading && isPlanner) {
+    if (!rolesLoading && activeRole && ["planner_admin", "planner"].includes(activeRole)) {
       navigate("/planner");
     }
-  }, [isPlanner, plannerLoading, navigate]);
+  }, [activeRole, rolesLoading, navigate]);
+
+  // If user has multiple roles but no activeRole set, redirect to selection
+  useEffect(() => {
+    if (!rolesLoading && !authLoading && user && hasMultipleRoles && !activeRole) {
+      navigate("/profile-selection");
+    }
+  }, [rolesLoading, authLoading, user, hasMultipleRoles, activeRole, navigate]);
 
   useEffect(() => {
-    if (!houseLoading && user && houses.length === 0 && !isPlanner) {
+    if (!houseLoading && user && houses.length === 0 && !canAccessPlanner) {
       navigate("/house-setup");
     }
-  }, [houses, houseLoading, user, isPlanner, navigate]);
+  }, [houses, houseLoading, user, canAccessPlanner, navigate]);
 
   // Check for trial expiration and show subscription dialog if no access (owners)
   useEffect(() => {
@@ -217,8 +226,14 @@ export default function Dashboard() {
   }, [hasAccess, subscriptionLoading, houses, memberRole]);
 
   const handleSignOut = async () => {
+    clearActiveRole();
     await signOut();
     navigate("/auth");
+  };
+
+  const handleSwitchProfile = () => {
+    clearActiveRole();
+    navigate("/profile-selection");
   };
 
   const copyInviteCode = () => {
@@ -351,6 +366,12 @@ export default function Dashboard() {
                     <Settings className="w-4 h-4" />
                     Configurações
                   </DropdownMenuItem>
+                  {hasMultipleRoles && (
+                    <DropdownMenuItem onClick={handleSwitchProfile} className="gap-2">
+                      <RefreshCw className="w-4 h-4" />
+                      Trocar Perfil
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-destructive">
                     <LogOut className="w-4 h-4" />

@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Loader2, Briefcase } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { FinLarLogo } from "@/components/FinLarLogo";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Badge } from "@/components/ui/badge";
 
 const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -38,14 +39,12 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
-  const context = searchParams.get("context");
-  const isPlannerContext = context === "planner";
   
-  // Force login mode for planner context - no public signup allowed
-  const [isLogin, setIsLogin] = useState(mode !== "signup" || isPlannerContext);
+  const [isLogin, setIsLogin] = useState(mode !== "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const { clearActiveRole, setActiveRole } = useActiveRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -59,12 +58,85 @@ export default function Auth() {
     defaultValues: { fullName: "", email: "", phone: "", birthDate: "", password: "", confirmPassword: "" },
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      if (!authLoading && user) {
+        // Check profile and house membership
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("profile_role")
+          .eq("id", user.id)
+          .single();
+
+        const { count: houseCount } = await supabase
+          .from("house_members")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        const isPlannerType = ["planner_admin", "planner"].includes(profile?.profile_role || "");
+        const hasHouse = (houseCount || 0) > 0;
+
+        if (isPlannerType && hasHouse) {
+          navigate("/profile-selection");
+        } else if (isPlannerType) {
+          navigate("/planner");
+        } else if (hasHouse) {
+          navigate("/dashboard");
+        } else {
+          navigate("/house-setup");
+        }
+      }
+    };
+
+    checkExistingSession();
+  }, [user, authLoading, navigate]);
+
+  const handlePostAuth = async (userId: string) => {
+    // Clear any previous role
+    clearActiveRole();
+
+    // Fetch user's profile and house membership
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("profile_role")
+      .eq("id", userId)
+      .single();
+
+    const { count: houseCount } = await supabase
+      .from("house_members")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    const profileRole = profile?.profile_role || "user";
+    const isPlannerType = ["planner_admin", "planner"].includes(profileRole);
+    const hasHouse = (houseCount || 0) > 0;
+
+    // Decide redirect based on capabilities
+    if (isPlannerType && hasHouse) {
+      // Multiple roles - go to selection
+      navigate("/profile-selection");
+    } else if (isPlannerType) {
+      // Only planner - set role and go to planner
+      setActiveRole(profileRole as "planner_admin" | "planner");
+      navigate("/planner");
+    } else if (hasHouse) {
+      // Only user with house
+      setActiveRole("user");
+      navigate("/dashboard");
+    } else {
+      // New user without house
+      setActiveRole("user");
+      navigate("/house-setup");
+    }
+  };
+
   const handleLogin = async (data: LoginFormData) => {
     setLoading(true);
     const { error } = await signIn(data.email, data.password);
-    setLoading(false);
-
+    
     if (error) {
+      setLoading(false);
       const errorMessage = error.message.includes("Invalid login credentials")
         ? "E-mail ou senha incorretos"
         : error.message;
@@ -73,23 +145,25 @@ export default function Auth() {
         description: errorMessage,
         variant: "destructive",
       });
-    } else {
-      // For planner context, redirect to planner onboarding check
-      if (isPlannerContext) {
-        navigate("/planner-onboarding");
-      } else {
-        navigate("/dashboard");
-      }
+      return;
     }
+
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      await handlePostAuth(session.user.id);
+    }
+    
+    setLoading(false);
   };
 
   const handleSignup = async (data: SignupFormData) => {
     setLoading(true);
-    const profileRole = isPlannerContext ? "planner_admin" : "user";
-    const { error } = await signUp(data.email, data.password, data.fullName, data.phone, data.birthDate, profileRole);
-    setLoading(false);
-
+    const { error } = await signUp(data.email, data.password, data.fullName, data.phone, data.birthDate, "user");
+    
     if (error) {
+      setLoading(false);
       const errorMessage = error.message.includes("already registered")
         ? "Este e-mail já está cadastrado"
         : error.message;
@@ -98,17 +172,22 @@ export default function Auth() {
         description: errorMessage,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Conta criada!",
-        description: isPlannerContext ? "Bem-vindo ao FinLar para Planejadores!" : "Bem-vindo ao FinLar!",
-      });
-      if (isPlannerContext) {
-        navigate("/planner-onboarding");
-      } else {
-        navigate("/dashboard");
-      }
+      return;
     }
+
+    toast({
+      title: "Conta criada!",
+      description: "Bem-vindo ao FinLar!",
+    });
+
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      await handlePostAuth(session.user.id);
+    }
+    
+    setLoading(false);
   };
 
   return (
@@ -126,21 +205,11 @@ export default function Auth() {
         <div className="w-full max-w-md animate-fade-in">
           <Card className="border-border/50 shadow-lg">
             <CardHeader className="text-center pb-4">
-              {isPlannerContext && (
-                <Badge variant="secondary" className="w-fit mx-auto mb-3">
-                  <Briefcase className="w-3 h-3 mr-1" />
-                  Para Profissionais
-                </Badge>
-              )}
               <CardTitle className="text-2xl font-bold text-foreground">
-                {isPlannerContext 
-                  ? (isLogin ? "Acesso do Planejador" : "Cadastro de Planejador")
-                  : (isLogin ? "Bem-vindo de volta!" : "Criar sua conta")}
+                {isLogin ? "Bem-vindo de volta!" : "Criar sua conta"}
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                {isPlannerContext
-                  ? "Acesso restrito a planejadores cadastrados"
-                  : (isLogin ? "Entre para gerenciar suas finanças" : "Comece a controlar seu dinheiro hoje")}
+                {isLogin ? "Entre para gerenciar suas finanças" : "Comece a controlar seu dinheiro hoje"}
               </CardDescription>
             </CardHeader>
 
@@ -318,27 +387,19 @@ export default function Auth() {
                 </form>
               )}
 
-              {!isPlannerContext && (
-                <div className="mt-6 text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      loginForm.reset();
-                      signupForm.reset();
-                    }}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre"}
-                  </button>
-                </div>
-              )}
-
-              {isPlannerContext && (
-                <p className="mt-6 text-xs text-center text-muted-foreground">
-                  Contas de planejador são criadas pelo administrador do sistema.
-                </p>
-              )}
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    loginForm.reset();
+                    signupForm.reset();
+                  }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre"}
+                </button>
+              </div>
             </CardContent>
           </Card>
 

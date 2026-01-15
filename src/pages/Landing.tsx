@@ -88,7 +88,13 @@ const Landing = () => {
           <div className="flex items-center gap-2">
             <FinLarLogo size="lg" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Link 
+              to="/planner/auth" 
+              className="text-sm text-muted-foreground hover:text-primary transition-colors hidden sm:block"
+            >
+              Portal do Planejador
+            </Link>
             <ThemeToggle />
             <Button asChild>
               <Link to="/auth">Entrar</Link>
@@ -274,10 +280,10 @@ const Landing = () => {
             
             {/* Link para área do planejador */}
             <Link 
-              to="/auth?mode=login&context=planner" 
+              to="/planner/auth" 
               className="text-xs text-muted-foreground/70 hover:text-primary transition-colors"
             >
-              Área do Planejador
+              Portal do Planejador
             </Link>
             
             <p className="text-xs text-muted-foreground">
