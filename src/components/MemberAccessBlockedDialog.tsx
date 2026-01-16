@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { Lock, Clock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +15,7 @@ interface MemberAccessBlockedDialogProps {
   onOpenChange: (open: boolean) => void;
   onLeaveHouse: () => void;
   houseName: string;
+  ownerSubscriptionStatus?: 'active' | 'trial' | 'expired' | 'sponsored' | null;
 }
 
 export function MemberAccessBlockedDialog({
@@ -22,7 +23,17 @@ export function MemberAccessBlockedDialog({
   onOpenChange,
   onLeaveHouse,
   houseName,
+  ownerSubscriptionStatus,
 }: MemberAccessBlockedDialogProps) {
+  const getStatusMessage = () => {
+    switch (ownerSubscriptionStatus) {
+      case 'expired':
+        return 'O período de teste ou assinatura expirou.';
+      default:
+        return 'O período de teste ou assinatura expirou.';
+    }
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -35,16 +46,29 @@ export function MemberAccessBlockedDialog({
           <AlertDialogTitle className="text-center">
             Acesso temporariamente indisponível
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-center">
-            O período de teste ou assinatura da casa <strong>{houseName}</strong> expirou.
-            <br /><br />
-            Aguarde o proprietário renovar a assinatura para continuar utilizando o app, 
-            ou você pode optar por sair da casa.
+          <AlertDialogDescription className="text-center space-y-2">
+            <p>
+              {getStatusMessage()}
+            </p>
+            <p className="text-sm">
+              Casa: <strong>{houseName}</strong>
+            </p>
+            <p className="text-sm text-muted-foreground mt-4">
+              Aguarde o proprietário renovar a assinatura para continuar utilizando o app, 
+              ou você pode optar por sair da casa e criar sua própria.
+            </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-          <AlertDialogCancel className="w-full sm:w-auto">
-            Entendi
+          <AlertDialogCancel 
+            className="w-full sm:w-auto"
+            onClick={(e) => {
+              e.preventDefault();
+              // Don't close - user needs to wait or leave
+            }}
+          >
+            <Clock className="w-4 h-4 mr-2" />
+            Aguardar renovação
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onLeaveHouse}

@@ -14,6 +14,12 @@ interface SubscriptionState {
   hasAccess: boolean;
   plannerSponsored: boolean;
   sponsoringPlannerName: string | null;
+  // New fields for house members
+  isHouseMember: boolean;
+  ownerHasAccess: boolean;
+  ownerSubscriptionStatus: 'active' | 'trial' | 'expired' | 'sponsored' | null;
+  ownerTrialEndsAt: string | null;
+  houseName: string | null;
 }
 
 export function useSubscription() {
@@ -30,6 +36,12 @@ export function useSubscription() {
     hasAccess: false,
     plannerSponsored: false,
     sponsoringPlannerName: null,
+    // New fields
+    isHouseMember: false,
+    ownerHasAccess: false,
+    ownerSubscriptionStatus: null,
+    ownerTrialEndsAt: null,
+    houseName: null,
   });
 
   const checkSubscription = useCallback(async () => {
@@ -45,6 +57,11 @@ export function useSubscription() {
         hasAccess: false,
         plannerSponsored: false,
         sponsoringPlannerName: null,
+        isHouseMember: false,
+        ownerHasAccess: false,
+        ownerSubscriptionStatus: null,
+        ownerTrialEndsAt: null,
+        houseName: null,
       });
       return;
     }
@@ -63,7 +80,14 @@ export function useSubscription() {
       const isSubscribed = data?.subscribed ?? false;
       const isInTrial = data?.is_in_trial ?? false;
       const plannerSponsored = data?.planner_sponsored ?? false;
-      const hasAccess = isSubscribed || isInTrial || plannerSponsored;
+      const isHouseMember = data?.is_house_member ?? false;
+      const ownerHasAccess = data?.owner_has_access ?? false;
+      
+      // For house members, access is based on owner's subscription
+      // For owners/regular users, access is based on their own subscription/trial
+      const hasAccess = isHouseMember 
+        ? ownerHasAccess 
+        : (isSubscribed || isInTrial || plannerSponsored);
 
       setState(prev => ({
         ...prev,
@@ -76,6 +100,11 @@ export function useSubscription() {
         hasAccess,
         plannerSponsored,
         sponsoringPlannerName: data?.sponsoring_planner_name ?? null,
+        isHouseMember,
+        ownerHasAccess,
+        ownerSubscriptionStatus: data?.owner_subscription_status ?? null,
+        ownerTrialEndsAt: data?.owner_trial_ends_at ?? null,
+        houseName: data?.house_name ?? null,
       }));
     } catch (error) {
       console.error("Error checking subscription:", error);
@@ -176,11 +205,22 @@ export function useSubscription() {
     return Math.max(0, diffDays);
   }, [state.trialEndsAt]);
 
+  // Helper to calculate days remaining in owner's trial (for members)
+  const getOwnerTrialDaysRemaining = useCallback(() => {
+    if (!state.ownerTrialEndsAt) return 0;
+    const now = new Date();
+    const trialEnd = new Date(state.ownerTrialEndsAt);
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, [state.ownerTrialEndsAt]);
+
   return {
     ...state,
     checkSubscription,
     startCheckout,
     cancelSubscription,
     getTrialDaysRemaining,
+    getOwnerTrialDaysRemaining,
   };
 }
