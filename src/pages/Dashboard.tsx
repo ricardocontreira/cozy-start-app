@@ -52,6 +52,8 @@ export default function Dashboard() {
     trialEndsAt,
     getTrialDaysRemaining,
     startCheckout,
+    isHouseMember,
+    ownerSubscriptionStatus,
   } = useSubscription();
   const { activeRole, clearActiveRole } = useActiveRole();
   const { hasMultipleRoles, canAccessPlanner, loading: rolesLoading } = useProfileRoles();
@@ -788,12 +790,17 @@ export default function Dashboard() {
       {/* Member Access Blocked Dialog */}
       <MemberAccessBlockedDialog
         open={showMemberBlockedDialog}
-        onOpenChange={setShowMemberBlockedDialog}
+        onOpenChange={(open) => {
+          // Don't allow closing if user doesn't have access
+          if (!open && !hasAccess) return;
+          setShowMemberBlockedDialog(open);
+        }}
         onLeaveHouse={async () => {
           await leaveHouse();
           navigate("/house-setup");
         }}
         houseName={currentHouse?.name || ""}
+        ownerSubscriptionStatus={ownerSubscriptionStatus}
       />
 
       {/* Add Contribution Dialog */}

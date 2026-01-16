@@ -26,6 +26,76 @@ const safeTimestampToISO = (timestamp: unknown): string | null => {
   }
 };
 
+// Helper function to check owner's subscription status
+async function checkOwnerSubscription(
+  supabaseClient: any,
+  stripe: Stripe,
+  ownerId: string
+): Promise<{
+  hasAccess: boolean;
+  ownerSubscriptionStatus: 'active' | 'trial' | 'expired' | 'sponsored';
+  ownerTrialEndsAt: string | null;
+}> {
+  // Get owner's profile
+  const { data: ownerProfile } = await supabaseClient
+    .from("user_profiles")
+    .select("trial_ends_at, bypass_subscription, invited_by_planner_id")
+    .eq("id", ownerId)
+    .single();
+
+  // Check bypass
+  if (ownerProfile?.bypass_subscription) {
+    return { hasAccess: true, ownerSubscriptionStatus: 'active', ownerTrialEndsAt: null };
+  }
+
+  // Check planner sponsorship
+  if (ownerProfile?.invited_by_planner_id) {
+    const { data: plannerProfile } = await supabaseClient
+      .from("planner_profiles")
+      .select("is_active")
+      .eq("id", ownerProfile.invited_by_planner_id)
+      .single();
+
+    if (plannerProfile?.is_active) {
+      return { hasAccess: true, ownerSubscriptionStatus: 'sponsored', ownerTrialEndsAt: null };
+    }
+  }
+
+  // Check trial
+  const ownerTrialEndsAt = ownerProfile?.trial_ends_at ?? null;
+  const ownerIsInTrial = ownerTrialEndsAt ? new Date(ownerTrialEndsAt) > new Date() : false;
+
+  if (ownerIsInTrial) {
+    return { hasAccess: true, ownerSubscriptionStatus: 'trial', ownerTrialEndsAt };
+  }
+
+  // Get owner's email to check Stripe
+  const { data: ownerUser } = await supabaseClient.auth.admin.getUserById(ownerId);
+  
+  if (!ownerUser?.user?.email) {
+    return { hasAccess: false, ownerSubscriptionStatus: 'expired', ownerTrialEndsAt };
+  }
+
+  // Check Stripe subscription
+  const customers = await stripe.customers.list({ email: ownerUser.user.email, limit: 1 });
+
+  if (customers.data.length === 0) {
+    return { hasAccess: false, ownerSubscriptionStatus: 'expired', ownerTrialEndsAt };
+  }
+
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customers.data[0].id,
+    status: "active",
+    limit: 1,
+  });
+
+  if (subscriptions.data.length > 0) {
+    return { hasAccess: true, ownerSubscriptionStatus: 'active', ownerTrialEndsAt: null };
+  }
+
+  return { hasAccess: false, ownerSubscriptionStatus: 'expired', ownerTrialEndsAt };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -66,6 +136,53 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+
+    // Check if user is a house member (not owner)
+    const { data: houseMembership } = await supabaseClient
+      .from("house_members")
+      .select("house_id, role")
+      .eq("user_id", user.id)
+      .single();
+
+    // If user is a member (viewer role), check owner's subscription
+    if (houseMembership && houseMembership.role === "viewer") {
+      // Get house details separately
+      const { data: house } = await supabaseClient
+        .from("houses")
+        .select("id, name, owner_id")
+        .eq("id", houseMembership.house_id)
+        .single();
+      
+      if (house) {
+        logStep("User is house member, checking owner subscription", { 
+          userId: user.id, 
+          houseId: house.id, 
+          ownerId: house.owner_id 
+        });
+
+        const ownerStatus = await checkOwnerSubscription(supabaseClient, stripe, house.owner_id);
+        
+        logStep("Owner subscription status", ownerStatus);
+
+        return new Response(JSON.stringify({
+          subscribed: ownerStatus.hasAccess,
+          is_house_member: true,
+          owner_has_access: ownerStatus.hasAccess,
+          owner_subscription_status: ownerStatus.ownerSubscriptionStatus,
+          owner_trial_ends_at: ownerStatus.ownerTrialEndsAt,
+          house_name: house.name,
+          trial_ends_at: null,
+          is_in_trial: false,
+          planner_sponsored: false,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
+    // Rest of the logic for owners and non-members
     // Fetch trial_ends_at, bypass_subscription and invited_by_planner_id from user_profiles
     const { data: profile } = await supabaseClient
       .from("user_profiles")
@@ -89,6 +206,7 @@ serve(async (req) => {
         trial_ends_at: null,
         is_in_trial: false,
         planner_sponsored: false,
+        is_house_member: false,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -115,6 +233,7 @@ serve(async (req) => {
           cancel_at_period_end: false,
           trial_ends_at: null,
           is_in_trial: false,
+          is_house_member: false,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -126,7 +245,6 @@ serve(async (req) => {
     
     logStep("Trial status", { trialEndsAt, isInTrial });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
@@ -141,6 +259,7 @@ serve(async (req) => {
         subscribed: false,
         trial_ends_at: trialEndsAt,
         is_in_trial: isInTrial,
+        is_house_member: false,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -197,6 +316,7 @@ serve(async (req) => {
       cancel_at_period_end: cancelAtPeriodEnd,
       trial_ends_at: trialEndsAt,
       is_in_trial: isInTrial,
+      is_house_member: false,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
