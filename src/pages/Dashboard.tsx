@@ -353,7 +353,7 @@ export default function Dashboard() {
                     <div className="flex flex-col">
                       <span>{userName}</span>
                       <span className="text-xs font-normal text-muted-foreground">
-                        {memberRole === "owner" ? "Proprietário" : "Visualizador"}
+                        {memberRole === "owner" ? "Proprietário" : "Membro"}
                       </span>
                     </div>
                   </DropdownMenuLabel>
@@ -585,7 +585,7 @@ export default function Dashboard() {
                       <span className="font-semibold text-primary">
                         {formatCurrency(Number(contribution.amount))}
                       </span>
-                      {isOwner && (
+                      {hasAccess && (
                         <>
                           <Button
                             variant="ghost"

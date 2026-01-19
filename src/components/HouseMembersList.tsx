@@ -213,8 +213,8 @@ export function HouseMembersList({ houseId, isOwner, currentUserId }: HouseMembe
                         </>
                       ) : (
                         <>
-                          <Eye className="w-3 h-3 mr-1" />
-                          Visualizador
+                          <Users className="w-3 h-3 mr-1" />
+                          Membro
                         </>
                       )}
                     </Badge>
@@ -238,7 +238,7 @@ export function HouseMembersList({ houseId, isOwner, currentUserId }: HouseMembe
                         className="gap-2"
                       >
                         <ArrowUpDown className="w-4 h-4" />
-                        {member.role === "owner" ? "Tornar Visualizador" : "Tornar Proprietário"}
+                        {member.role === "owner" ? "Tornar Membro" : "Tornar Proprietário"}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem

@@ -226,12 +226,10 @@ export default function GoalDetails() {
                 </p>
               </div>
             </div>
-            {isOwner && (
-              <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
           </div>
         </div>
       </header>
@@ -486,17 +484,15 @@ export default function GoalDetails() {
       </main>
 
       {/* FAB for adding contributions */}
-      {isOwner && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
-          <Button
-            size="lg"
-            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
-            onClick={() => setShowContributionDialog(true)}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </div>
-      )}
+      <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
+        <Button
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
+          onClick={() => setShowContributionDialog(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
 
       {/* Dialogs */}
       <AddContributionDialog

@@ -104,10 +104,7 @@ export default function Planning() {
             </div>
             <h2 className="text-xl font-semibold mb-2">Nenhuma meta cadastrada</h2>
             <p className="text-muted-foreground max-w-sm">
-              {isOwner 
-                ? "Comece a planejar seu futuro financeiro criando sua primeira meta de economia."
-                : "O proprietário da casa ainda não criou nenhuma meta financeira."
-              }
+              Comece a planejar seu futuro financeiro criando sua primeira meta de economia.
             </p>
           </div>
         ) : (
@@ -127,17 +124,15 @@ export default function Planning() {
       </main>
 
       {/* FAB for adding goals */}
-      {isOwner && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
-          <Button
-            size="lg"
-            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </div>
-      )}
+      <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
+        <Button
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
+          onClick={() => setDialogOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
 
       {/* Add Goal Dialog */}
       <AddGoalDialog

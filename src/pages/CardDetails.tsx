@@ -287,47 +287,45 @@ export default function CardDetails() {
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              {isOwner && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDialogOpen(true)}
-                    className="rounded-full"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full text-destructive hover:text-destructive"
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDialogOpen(true)}
+                  className="rounded-full"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. O cartão "{card.name}" será
+                        permanentemente removido.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. O cartão "{card.name}" será
-                          permanentemente removido.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleDelete}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              )}
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             </div>
           </div>
         </div>
@@ -373,24 +371,17 @@ export default function CardDetails() {
               <p className="text-sm text-muted-foreground mb-4">
                 Você no controle das suas finanças. Arraste um arquivo CSV ou Excel com suas transações.
               </p>
-              {isOwner ? (
-                <InvoiceUploader
-                  onUpload={uploadInvoice}
-                  isUploading={isUploading}
-                />
-              ) : (
-                <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
-                  <FileSpreadsheet className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Apenas o proprietário pode importar faturas</p>
-                </div>
-              )}
+              <InvoiceUploader
+                onUpload={uploadInvoice}
+                isUploading={isUploading}
+              />
             </div>
 
             <UploadHistory
               history={uploadHistory}
               isLoading={historyLoading}
               onUndo={undoUpload}
-              isOwner={isOwner}
+              isOwner={true}
               houseId={currentHouse?.id || ""}
               onRefresh={refreshHistory}
               hasMore={hasMoreHistory}
