@@ -93,12 +93,12 @@ serve(async (req) => {
     const fileTypeLabel = isPdf ? "PDF" : isExcel ? "Excel" : "CSV";
     console.log(`Processing invoice: ${filename} (type: ${fileTypeLabel}) for card ${cardId}, invoice month: ${invoiceMonth}`);
 
-    // Verify user is owner of the house
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .rpc("get_house_role", { _user_id: userId, _house_id: houseId });
+    // Verify user is member of the house
+    const { data: isMember, error: memberError } = await supabaseAdmin
+      .rpc("is_house_member", { _user_id: userId, _house_id: houseId });
 
-    if (roleError || roleData !== "owner") {
-      throw new Error("Only house owners can upload invoices");
+    if (memberError || !isMember) {
+      throw new Error("Only house members can upload invoices");
     }
 
     // Função simplificada: usa diretamente o mês da fatura informado pelo usuário

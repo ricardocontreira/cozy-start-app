@@ -226,157 +226,155 @@ export default function Cards() {
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              {isOwner && (
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="gap-2" onClick={openNewCardDialog}>
-                      <Plus className="w-4 h-4" />
-                      <span className="hidden sm:inline">Adicionar</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Novo Cartão</DialogTitle>
-                      <DialogDescription>
-                        Adicione um novo cartão de crédito à sua Casa.
-                      </DialogDescription>
-                    </DialogHeader>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2" onClick={openNewCardDialog}>
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Adicionar</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Novo Cartão</DialogTitle>
+                    <DialogDescription>
+                      Adicione um novo cartão de crédito à sua Casa.
+                    </DialogDescription>
+                  </DialogHeader>
 
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="card-name">Apelido do cartão</Label>
-                        <Input
-                          id="card-name"
-                          placeholder="Ex: Cartão Principal"
-                          {...form.register("name")}
-                        />
-                        {form.formState.errors.name && (
-                          <p className="text-sm text-destructive">
-                            {form.formState.errors.name.message}
-                          </p>
-                        )}
-                      </div>
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="card-name">Apelido do cartão</Label>
+                      <Input
+                        id="card-name"
+                        placeholder="Ex: Cartão Principal"
+                        {...form.register("name")}
+                      />
+                      {form.formState.errors.name && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.name.message}
+                        </p>
+                      )}
+                    </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="card-brand">Bandeira</Label>
+                      <Select
+                        value={form.watch("brand")}
+                        onValueChange={(value) => form.setValue("brand", value as "visa" | "mastercard" | "elo")}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="visa">
+                            <span className="flex items-center gap-2">
+                              {brandIcons.visa} Visa
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="mastercard">
+                            <span className="flex items-center gap-2">
+                              {brandIcons.mastercard} Mastercard
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="elo">
+                            <span className="flex items-center gap-2">
+                              {brandIcons.elo} Elo
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="last-digits">Últimos 4 dígitos</Label>
+                      <Input
+                        id="last-digits"
+                        placeholder="0000"
+                        maxLength={4}
+                        {...form.register("last_digits")}
+                        className="font-mono tracking-widest"
+                      />
+                      {form.formState.errors.last_digits && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.last_digits.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Closing and Due Day */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="card-brand">Bandeira</Label>
+                        <Label htmlFor="closing-day">Dia de fechamento</Label>
                         <Select
-                          value={form.watch("brand")}
-                          onValueChange={(value) => form.setValue("brand", value as "visa" | "mastercard" | "elo")}
+                          value={form.watch("closing_day")?.toString()}
+                          onValueChange={(value) => form.setValue("closing_day", parseInt(value))}
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Dia" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="visa">
-                              <span className="flex items-center gap-2">
-                                {brandIcons.visa} Visa
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="mastercard">
-                              <span className="flex items-center gap-2">
-                                {brandIcons.mastercard} Mastercard
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="elo">
-                              <span className="flex items-center gap-2">
-                                {brandIcons.elo} Elo
-                              </span>
-                            </SelectItem>
+                            {daysOptions.map((day) => (
+                              <SelectItem key={day} value={day.toString()}>
+                                Dia {day}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="last-digits">Últimos 4 dígitos</Label>
-                        <Input
-                          id="last-digits"
-                          placeholder="0000"
-                          maxLength={4}
-                          {...form.register("last_digits")}
-                          className="font-mono tracking-widest"
-                        />
-                        {form.formState.errors.last_digits && (
-                          <p className="text-sm text-destructive">
-                            {form.formState.errors.last_digits.message}
-                          </p>
+                        <Label htmlFor="due-day">Dia de vencimento</Label>
+                        <Select
+                          value={form.watch("due_day")?.toString()}
+                          onValueChange={(value) => form.setValue("due_day", parseInt(value))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Dia" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {daysOptions.map((day) => (
+                              <SelectItem key={day} value={day.toString()}>
+                                Dia {day}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Cor do cartão</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {cardColors.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => form.setValue("color", color)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                              form.watch("color") === color
+                                ? "border-foreground scale-110"
+                                : "border-transparent"
+                            }`}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+                        {submitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          "Adicionar cartão"
                         )}
-                      </div>
-
-                      {/* Closing and Due Day */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="closing-day">Dia de fechamento</Label>
-                          <Select
-                            value={form.watch("closing_day")?.toString()}
-                            onValueChange={(value) => form.setValue("closing_day", parseInt(value))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Dia" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {daysOptions.map((day) => (
-                                <SelectItem key={day} value={day.toString()}>
-                                  Dia {day}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="due-day">Dia de vencimento</Label>
-                          <Select
-                            value={form.watch("due_day")?.toString()}
-                            onValueChange={(value) => form.setValue("due_day", parseInt(value))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Dia" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {daysOptions.map((day) => (
-                                <SelectItem key={day} value={day.toString()}>
-                                  Dia {day}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Cor do cartão</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {cardColors.map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              onClick={() => form.setValue("color", color)}
-                              className={`w-8 h-8 rounded-full border-2 transition-all ${
-                                form.watch("color") === color
-                                  ? "border-foreground scale-110"
-                                  : "border-transparent"
-                              }`}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <DialogFooter>
-                        <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-                          {submitting ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Salvando...
-                            </>
-                          ) : (
-                            "Adicionar cartão"
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -396,16 +394,12 @@ export default function Cards() {
               Nenhum cartão cadastrado
             </h2>
             <p className="text-muted-foreground mb-6">
-              {isOwner
-                ? "Comece adicionando seu primeiro cartão de crédito."
-                : "O proprietário da Casa ainda não adicionou cartões."}
+              Comece adicionando seu primeiro cartão de crédito.
             </p>
-            {isOwner && (
-              <Button onClick={openNewCardDialog} className="gap-2">
-                <Plus className="w-4 h-4" />
-                Adicionar primeiro cartão
-              </Button>
-            )}
+            <Button onClick={openNewCardDialog} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Adicionar primeiro cartão
+            </Button>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">

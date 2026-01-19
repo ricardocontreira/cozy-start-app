@@ -61,12 +61,12 @@ serve(async (req) => {
       throw new Error("Missing required fields: uploadId, cardId, houseId, approvedTransactions, invoiceMonth");
     }
 
-    // Verify user is owner of the house
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .rpc("get_house_role", { _user_id: userId, _house_id: houseId });
+    // Verify user is member of the house
+    const { data: isMember, error: memberError } = await supabaseAdmin
+      .rpc("is_house_member", { _user_id: userId, _house_id: houseId });
 
-    if (roleError || roleData !== "owner") {
-      throw new Error("Only house owners can approve duplicates");
+    if (memberError || !isMember) {
+      throw new Error("Only house members can approve duplicates");
     }
 
     // Calculate billing month
