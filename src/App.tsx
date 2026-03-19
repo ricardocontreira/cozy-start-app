@@ -53,6 +53,7 @@ const App = () => (
                 <Route path="/planning" element={<Planning />} />
                 <Route path="/goals/:goalId" element={<GoalDetails />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/annual-overview" element={<AnnualOverview />} />
                 <Route path="/planner-onboarding" element={<PlannerOnboarding />} />
                 <Route path="/planner" element={<PlannerDashboard />} />
                 <Route path="/planner/client/:clientId" element={<ClientDetails />} />
