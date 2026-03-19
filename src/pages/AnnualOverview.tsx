@@ -12,6 +12,8 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MONTH_LABELS = [
   "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
@@ -29,6 +31,18 @@ export default function AnnualOverview() {
   const { transactions, isLoading } = useHouseTransactions({ houseId: currentHouse?.id });
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+
+  const monthTransactions = useMemo(() => {
+    if (selectedMonth === null) return { receitas: [], despesas: [] };
+    const receitas = transactions.filter(
+      (t) => t.billingMonth.getFullYear() === selectedYear && t.billingMonth.getMonth() === selectedMonth && t.type === "income"
+    );
+    const despesas = transactions.filter(
+      (t) => t.billingMonth.getFullYear() === selectedYear && t.billingMonth.getMonth() === selectedMonth && t.type !== "income"
+    );
+    return { receitas, despesas };
+  }, [transactions, selectedYear, selectedMonth]);
 
   const monthlyData = useMemo(() => {
     const data = MONTH_LABELS.map((label, i) => ({
@@ -219,7 +233,8 @@ export default function AnnualOverview() {
                       return (
                         <tr
                           key={i}
-                          className={`border-b border-border/30 ${!hasData ? "opacity-40" : ""}`}
+                          className={`border-b border-border/30 ${!hasData ? "opacity-40" : "cursor-pointer hover:bg-muted/50"}`}
+                          onClick={() => hasData && setSelectedMonth(i)}
                         >
                           <td className="py-2.5 font-medium">{m.name}</td>
                           <td className="py-2.5 text-right text-emerald-600">
@@ -249,6 +264,87 @@ export default function AnnualOverview() {
             )}
           </CardContent>
         </Card>
+
+        {/* Month detail dialog */}
+        <Dialog open={selectedMonth !== null} onOpenChange={(open) => !open && setSelectedMonth(null)}>
+          <DialogContent className="max-w-md max-h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedMonth !== null
+                  ? `${MONTH_LABELS[selectedMonth]}/${selectedYear}`
+                  : ""}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[65vh] pr-3">
+              {/* Receitas */}
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-emerald-600 mb-2">
+                  Receitas ({monthTransactions.receitas.length})
+                </h3>
+                {monthTransactions.receitas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhuma receita neste mês</p>
+                ) : (
+                  <div className="space-y-2">
+                    {monthTransactions.receitas.map((t) => (
+                      <div key={t.id} className="flex justify-between items-start text-sm border-b border-border/30 pb-2">
+                        <div>
+                          <p className="font-medium">{t.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(t.transaction_date), "dd/MM/yyyy")}
+                            {t.category ? ` · ${t.category}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-emerald-600 font-medium whitespace-nowrap ml-2">
+                          {formatCurrency(Math.abs(Number(t.amount)))}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm font-bold pt-1">
+                      <span>Total</span>
+                      <span className="text-emerald-600">
+                        {formatCurrency(monthTransactions.receitas.reduce((s, t) => s + Math.abs(Number(t.amount)), 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Despesas */}
+              <div>
+                <h3 className="text-sm font-semibold text-red-600 mb-2">
+                  Despesas ({monthTransactions.despesas.length})
+                </h3>
+                {monthTransactions.despesas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhuma despesa neste mês</p>
+                ) : (
+                  <div className="space-y-2">
+                    {monthTransactions.despesas.map((t) => (
+                      <div key={t.id} className="flex justify-between items-start text-sm border-b border-border/30 pb-2">
+                        <div>
+                          <p className="font-medium">{t.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(t.transaction_date), "dd/MM/yyyy")}
+                            {t.category ? ` · ${t.category}` : ""}
+                            {t.installment ? ` · ${t.installment}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-red-600 font-medium whitespace-nowrap ml-2">
+                          {formatCurrency(Math.abs(Number(t.amount)))}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm font-bold pt-1">
+                      <span>Total</span>
+                      <span className="text-red-600">
+                        {formatCurrency(monthTransactions.despesas.reduce((s, t) => s + Math.abs(Number(t.amount)), 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </main>
 
       <MobileBottomNav activeRoute="dashboard" />
