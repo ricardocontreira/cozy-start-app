@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, CreditCard, Settings, LogOut, Copy, Check, Users, ChevronRight, Clock, Sparkles, Target, PiggyBank, Plus, Pencil, Trash2, AlertTriangle, RefreshCw, BarChart3 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFinancialGoals, GoalFormData } from "@/hooks/useFinancialGoals";
 import { useGoalContributions, GoalContribution } from "@/hooks/useGoalContributions";
