@@ -81,7 +81,7 @@ export default function AnnualOverview() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground px-4 pt-6 pb-8 rounded-b-3xl">
+      <div className="bg-primary text-primary-foreground px-4 pt-6 pb-8">
         <div className="flex items-center gap-3 mb-4">
           <Button
             variant="ghost"
