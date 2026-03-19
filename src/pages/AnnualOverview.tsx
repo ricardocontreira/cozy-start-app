@@ -31,6 +31,18 @@ export default function AnnualOverview() {
   const { transactions, isLoading } = useHouseTransactions({ houseId: currentHouse?.id });
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+
+  const monthTransactions = useMemo(() => {
+    if (selectedMonth === null) return { receitas: [], despesas: [] };
+    const receitas = transactions.filter(
+      (t) => t.billingMonth.getFullYear() === selectedYear && t.billingMonth.getMonth() === selectedMonth && t.type === "income"
+    );
+    const despesas = transactions.filter(
+      (t) => t.billingMonth.getFullYear() === selectedYear && t.billingMonth.getMonth() === selectedMonth && t.type !== "income"
+    );
+    return { receitas, despesas };
+  }, [transactions, selectedYear, selectedMonth]);
 
   const monthlyData = useMemo(() => {
     const data = MONTH_LABELS.map((label, i) => ({
