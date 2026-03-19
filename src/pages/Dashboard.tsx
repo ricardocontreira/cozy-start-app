@@ -536,6 +536,21 @@ export default function Dashboard() {
           </Alert>
         )}
 
+        {/* Annual Overview Shortcut */}
+        <button
+          onClick={() => navigate("/annual-overview")}
+          className="w-full flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card hover:border-primary/50 hover:shadow-md transition-all group"
+        >
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <BarChart3 className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-semibold text-foreground">Visão Financeira Anual</p>
+            <p className="text-sm text-muted-foreground">Receitas vs Despesas mês a mês</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+        </button>
+
         {/* Monthly Contributions Preview */}
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -761,20 +776,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Annual Overview Shortcut */}
-        <button
-          onClick={() => navigate("/annual-overview")}
-          className="w-full flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card hover:border-primary/50 hover:shadow-md transition-all group"
-        >
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-semibold text-foreground">Visão Financeira Anual</p>
-            <p className="text-sm text-muted-foreground">Receitas vs Despesas mês a mês</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-        </button>
       </main>
 
       {/* FAB for adding expense/income */}
