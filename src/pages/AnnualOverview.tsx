@@ -233,7 +233,8 @@ export default function AnnualOverview() {
                       return (
                         <tr
                           key={i}
-                          className={`border-b border-border/30 ${!hasData ? "opacity-40" : ""}`}
+                          className={`border-b border-border/30 ${!hasData ? "opacity-40" : "cursor-pointer hover:bg-muted/50"}`}
+                          onClick={() => hasData && setSelectedMonth(i)}
                         >
                           <td className="py-2.5 font-medium">{m.name}</td>
                           <td className="py-2.5 text-right text-emerald-600">
@@ -263,6 +264,87 @@ export default function AnnualOverview() {
             )}
           </CardContent>
         </Card>
+
+        {/* Month detail dialog */}
+        <Dialog open={selectedMonth !== null} onOpenChange={(open) => !open && setSelectedMonth(null)}>
+          <DialogContent className="max-w-md max-h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedMonth !== null
+                  ? `${MONTH_LABELS[selectedMonth]}/${selectedYear}`
+                  : ""}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[65vh] pr-3">
+              {/* Receitas */}
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-emerald-600 mb-2">
+                  Receitas ({monthTransactions.receitas.length})
+                </h3>
+                {monthTransactions.receitas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhuma receita neste mês</p>
+                ) : (
+                  <div className="space-y-2">
+                    {monthTransactions.receitas.map((t) => (
+                      <div key={t.id} className="flex justify-between items-start text-sm border-b border-border/30 pb-2">
+                        <div>
+                          <p className="font-medium">{t.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(t.transaction_date), "dd/MM/yyyy")}
+                            {t.category ? ` · ${t.category}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-emerald-600 font-medium whitespace-nowrap ml-2">
+                          {formatCurrency(Math.abs(Number(t.amount)))}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm font-bold pt-1">
+                      <span>Total</span>
+                      <span className="text-emerald-600">
+                        {formatCurrency(monthTransactions.receitas.reduce((s, t) => s + Math.abs(Number(t.amount)), 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Despesas */}
+              <div>
+                <h3 className="text-sm font-semibold text-red-600 mb-2">
+                  Despesas ({monthTransactions.despesas.length})
+                </h3>
+                {monthTransactions.despesas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhuma despesa neste mês</p>
+                ) : (
+                  <div className="space-y-2">
+                    {monthTransactions.despesas.map((t) => (
+                      <div key={t.id} className="flex justify-between items-start text-sm border-b border-border/30 pb-2">
+                        <div>
+                          <p className="font-medium">{t.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(t.transaction_date), "dd/MM/yyyy")}
+                            {t.category ? ` · ${t.category}` : ""}
+                            {t.installment ? ` · ${t.installment}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-red-600 font-medium whitespace-nowrap ml-2">
+                          {formatCurrency(Math.abs(Number(t.amount)))}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm font-bold pt-1">
+                      <span>Total</span>
+                      <span className="text-red-600">
+                        {formatCurrency(monthTransactions.despesas.reduce((s, t) => s + Math.abs(Number(t.amount)), 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </main>
 
       <MobileBottomNav activeRoute="dashboard" />
