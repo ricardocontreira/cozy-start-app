@@ -25,6 +25,7 @@ import PlannerOnboarding from "./pages/PlannerOnboarding";
 import PlannerDashboard from "./pages/PlannerDashboard";
 import PlannerSettings from "./pages/PlannerSettings";
 import ClientDetails from "./pages/ClientDetails";
+import AnnualOverview from "./pages/AnnualOverview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
