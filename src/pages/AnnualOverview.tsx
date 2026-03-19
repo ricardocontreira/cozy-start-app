@@ -191,8 +191,8 @@ export default function AnnualOverview() {
 
         {/* Monthly table */}
         <Card className="border-border/50 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">Detalhamento Mensal</CardTitle>
+          <CardHeader className="pb-1 pt-3">
+            <CardTitle className="text-base font-semibold">Detalhamento Mensal</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
