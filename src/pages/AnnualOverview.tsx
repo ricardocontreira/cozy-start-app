@@ -206,10 +206,10 @@ export default function AnnualOverview() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/50">
-                      <th className="text-left py-2 font-medium text-muted-foreground">Mês</th>
-                      <th className="text-right py-2 font-medium text-emerald-600">Receitas</th>
-                      <th className="text-right py-2 font-medium text-red-600">Despesas</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">Saldo</th>
+                      <th className="text-left py-1 text-xs font-medium text-muted-foreground">Mês</th>
+                      <th className="text-right py-1 text-xs font-medium text-emerald-600">Receitas</th>
+                      <th className="text-right py-1 text-xs font-medium text-red-600">Despesas</th>
+                      <th className="text-right py-1 text-xs font-medium text-muted-foreground">Saldo</th>
                     </tr>
                   </thead>
                   <tbody>
